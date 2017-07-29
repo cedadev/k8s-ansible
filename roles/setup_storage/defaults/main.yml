@@ -1,0 +1,3 @@
+# By default, we don't configure any additional storage devices
+storage_devices: []
+root_volume_group: ubuntu-vg

@@ -1,0 +1,104 @@
+---
+
+- name: Install packages to allow apt to use https
+  apt: update_cache=yes name={{ item }} state=latest
+  with_items:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - software-properties-common
+
+- name: Add apt repository key for Kubernetes
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: Add apt repository for Kubernetes
+  apt_repository:
+    repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+
+- name: Install Kubernetes
+  apt: update_cache=yes name={{ item }} state=latest
+  with_items:
+    - kubelet
+    - kubeadm
+    - kubectl
+
+- name: Install jq
+  apt: name=jq state=latest
+  when: inventory_hostname in groups['kube_masters']
+
+- name: Initialise Kubernetes control plane
+  command: kubeadm init --apiserver-advertise-address={{ kube_master_ip }}
+  args:
+    creates: /etc/kubernetes/kubelet.conf
+  register: kubeadm_init
+  when: inventory_hostname in groups['kube_masters']
+
+- name: Update proxy-mode for proxy pods
+  shell: >
+    kubectl -n kube-system get ds -l k8s-app=kube-proxy -o json |
+      jq '.items[0].spec.template.spec.containers[0].command |= .+ ["--proxy-mode=userspace"]' |
+      kubectl apply -f - &&
+    kubectl -n kube-system delete pods -l k8s-app=kube-proxy
+  when:
+    - inventory_hostname in groups['kube_masters']
+    - kubeadm_init|changed
+    - use_userspace_proxy is defined
+    - use_userspace_proxy
+
+- name: Install pod network
+  command: kubectl apply -f https://git.io/weave-kube-1.6
+  when: inventory_hostname in groups['kube_masters']
+
+- name: Ensure kube-dns has started
+  shell: >
+    kubectl -n kube-system get deployment -l k8s-app=kube-dns -o json |
+      jq '(.items|length > 0) and (.items|map(.status.replicas == .status.availableReplicas)|all)'
+  register: result
+  until: result.stdout == "true"
+  retries: 30
+  delay: 10
+  when: inventory_hostname in groups['kube_masters']
+
+- name: Allow scheduling of work on master
+  command: kubectl taint nodes --all node-role.kubernetes.io/master-
+  when:
+    - inventory_hostname in groups['kube_masters']
+    - isolate_master is not defined or not isolate_master
+  register: result
+  changed_when: result.rc == 0
+  failed_when: result.rc != 0 and 'not found' not in result.stderr
+
+- name: Get kubeadm token
+  shell: kubeadm token list | sed -n 2p | awk '{ print $1 };'
+  register: kubeadm_token
+  when: inventory_hostname in groups['kube_masters']
+
+- name: Set kubeadm_token fact (masters)
+  set_fact:
+    kubeadm_token: "{{ kubeadm_token.stdout }}"
+  when: inventory_hostname in groups['kube_masters']
+
+- name: Set kubeadm_token fact (nodes)
+  set_fact:
+    kubeadm_token: "{{ hostvars[groups['kube_masters'][0]].kubeadm_token }}"
+  when: inventory_hostname in groups['kube_nodes']
+
+- name: Join Kubernetes cluster
+  command: kubeadm join --skip-preflight-checks --token={{ kubeadm_token }} {{ kube_master_ip }}:6443
+  args:
+    creates: /etc/kubernetes/kubelet.conf
+  when: inventory_hostname in groups['kube_nodes']
+
+- name: Make local artifacts directory
+  file: path={{ playbook_dir }}/.artifacts/{{ artifact_namespace }} state=directory
+  delegate_to: 127.0.0.1
+
+- name: Retrieve Kubernetes admin config
+  fetch:
+    src: /etc/kubernetes/admin.conf
+    dest: "{{ playbook_dir }}/.artifacts/{{ artifact_namespace }}/kubernetes-admin.conf"
+    flat: yes
+  when: inventory_hostname in groups['kube_masters']

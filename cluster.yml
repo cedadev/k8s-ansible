@@ -1,0 +1,15 @@
+---
+
+- hosts: kube_hosts
+  remote_user: root
+  force_handlers: yes
+  roles:
+    - setup_networking
+    - setup_storage
+    - docker_ce
+    - kubernetes
+    - storage_rook
+    - role: ingress_nginx
+      when: inventory_hostname in groups['kube_masters']
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf

@@ -1,0 +1,19 @@
+---
+
+- name: Check if storage device exists
+  stat: path={{ storage_device }}
+  register: stat_device
+
+- name: Check if device has already been added to LVM
+  shell: pvscan | grep {{ storage_device }}
+  register: pvscan
+  when: stat_device.stat.exists
+  failed_when: "pvscan.rc < 0 or pvscan.rc > 1"
+
+- name: Create LVM physical volume from storage device
+  command: pvcreate {{ storage_device }}
+  when: stat_device.stat.exists and pvscan.rc == 1
+
+- name: Extend LVM volume group with physical volume
+  command: vgextend {{ root_volume_group }} {{ storage_device }}
+  when: stat_device.stat.exists and pvscan.rc == 1

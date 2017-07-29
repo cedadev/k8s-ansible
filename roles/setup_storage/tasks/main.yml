@@ -1,0 +1,18 @@
+---
+
+- include: extend_lvmvg.yml
+  with_items: "{{ storage_devices }}"
+  loop_control:
+    loop_var: storage_device
+
+# NOTE: A return code of 3 indicates that the size would be the same before and after the operation
+#       We don't consider this to be a failure
+- name: Extend LVM root volume to fill volume group
+  command: lvextend -l +100%FREE /dev/{{ root_volume_group }}/root
+  register: lvextend
+  failed_when: "lvextend.rc not in [0, 3]"
+  changed_when: "lvextend.rc == 0"
+
+- name: Resize root filesystem to fill volume
+  command: resize2fs /dev/{{ root_volume_group }}/root
+  register: resize2fs

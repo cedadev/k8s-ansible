@@ -1,0 +1,19 @@
+---
+
+- name: Create manifests directory
+  file: path=/root/manifests state=directory
+
+- name: Copy nginx ingress controller manifest
+  template: src=nginx-ingress-controller.yml dest=/root/manifests/ mode="u=rw,g=,o="
+
+- name: Install nginx ingress controller
+  shell: kubectl apply -f /root/manifests/nginx-ingress-controller.yml --force
+
+- name: Ensure nginx ingress controller has started
+  shell: >
+    kubectl -n nginx-ingress get deployment -l app=nginx-ingress-controller -o json |
+      jq '(.items|length > 0) and (.items|map(.status.replicas == .status.availableReplicas)|all)'
+  register: result
+  until: result.stdout == "true"
+  retries: 30
+  delay: 10
