@@ -1,7 +1,7 @@
 # k8s-ansible
 
-This project aims to provide an [Ansible](https://www.ansible.com/) playbook to
-provision a Kubernetes cluster.
+This project aims to provide a simple [Ansible](https://www.ansible.com/) playbook to
+provision a [Kubernetes](https://kubernetes.io) cluster.
 
 It uses the [kubeadm tool](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/)
 to set up a secure cluster.
