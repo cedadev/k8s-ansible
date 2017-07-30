@@ -1,33 +1,10 @@
 ---
 
-- name: Install packages to allow apt to use https
-  apt: update_cache=yes name={{ item }} state=latest
-  with_items:
-    - apt-transport-https
-    - ca-certificates
-    - curl
-    - software-properties-common
+- include: install-ubuntu.yml
+  when: ansible_distribution == 'Ubuntu'
 
-- name: Add apt repository key for Kubernetes
-  apt_key:
-    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-    state: present
-
-- name: Add apt repository for Kubernetes
-  apt_repository:
-    repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
-    state: present
-
-- name: Install Kubernetes
-  apt: update_cache=yes name={{ item }} state=latest
-  with_items:
-    - kubelet
-    - kubeadm
-    - kubectl
-
-- name: Install jq
-  apt: name=jq state=latest
-  when: inventory_hostname in groups['kube_masters']
+- include: install-centos.yml
+  when: ansible_distribution == 'CentOS'
 
 - name: Initialise Kubernetes control plane
   command: kubeadm init --apiserver-advertise-address={{ kube_master_ip }}

@@ -1,9 +1,11 @@
 ---
 
+# This only seems to be required on Ubuntu
 - name: Force new machine id
   shell: rm /etc/machine-id /var/lib/dbus/machine-id && systemd-machine-id-setup
   args:
     creates: /root/.ansible-machine-id
+  when: ansible_distribution == 'Ubuntu'
 
 - name: Create .ansible-machine-id file. This file is used as a sentinel to indicate that the previous step has been performed.
   copy:
@@ -11,6 +13,23 @@
     dest: /root/.ansible-machine-id
     mode: "u=rw,g=,o="
     force: no
+  when: ansible_distribution == 'Ubuntu'
+
+# This only seems to be required on CentOS
+- name: Create sysctl settings file
+  copy:
+    dest: /etc/sysctl.d/k8s.conf
+    content: |
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.bridge.bridge-nf-call-iptables = 1
+  register: sysctl_k8s
+  when: ansible_distribution == 'CentOS'
+
+- name: Load new sysctl settings
+  command: sysctl --system
+  when:
+    - ansible_distribution == 'CentOS'
+    - sysctl_k8s|changed
 
 - name: Add cluster IPs on correct interface to /etc/hosts
   lineinfile:

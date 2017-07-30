@@ -1,22 +1,9 @@
 ---
 
-- name: Install packages to allow apt to use https
-  apt: update_cache=yes name={{ item }} state=latest
-  with_items:
-    - apt-transport-https
-    - ca-certificates
-    - curl
-    - software-properties-common
+- name: Install Ubuntu
+  include: install-ubuntu.yml
+  when: ansible_distribution == 'Ubuntu'
 
-- name: Add apt repository key for Docker
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
-
-- name: Add apt repository for Docker
-  apt_repository:
-    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
-    state: present
-
-- name: Install Docker
-  apt: update_cache=yes name=docker-ce state=latest
+- name: Install CentOS
+  include: install-centos.yml
+  when: ansible_distribution == 'CentOS'
