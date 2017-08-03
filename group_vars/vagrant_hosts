@@ -1,4 +1,6 @@
-root_volume_group: vagrant-vg
+setup_networking: true
+
+# root_volume_group: vagrant-vg
 
 cluster_interface: enp0s8
 use_userspace_proxy: true
