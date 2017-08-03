@@ -4,9 +4,9 @@
   remote_user: root
   force_handlers: yes
   roles:
-    - setup_networking
+    - role: setup_networking
       when: setup_networking is defined and setup_networking
-    - setup_storage
+    - role: setup_storage
       when: setup_storage is defined and setup_storage
     - docker_ce
     - kubernetes
