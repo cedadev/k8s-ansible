@@ -6,3 +6,5 @@ cluster_interface: enp0s8
 use_userspace_proxy: true
 
 artifact_namespace: vagrant
+
+storage_rook: true
