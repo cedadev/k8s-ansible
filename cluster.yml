@@ -10,7 +10,8 @@
       when: setup_storage is defined and setup_storage
     - docker_ce
     - kubernetes
-    - storage_rook
+    - role: storage_rook
+      when: storage_rook is not defined or storage_rook
     - role: ingress_nginx
       when: inventory_hostname in groups['kube_masters']
   environment:
