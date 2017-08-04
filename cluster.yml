@@ -14,5 +14,9 @@
       when: storage_rook is not defined or storage_rook
     - role: ingress_nginx
       when: inventory_hostname in groups['kube_masters']
+    - role: helm
+      when:
+        - inventory_hostname in groups['kube_masters']
+        - install_helm is not defined or install_helm
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf

@@ -1,4 +1,6 @@
 setup_networking: true
+# Ceph installation is currently broken for CentOS, so just switch it off for now
+storage_rook: "{{ ansible_distribution == 'Ubuntu' }}"
 
 # root_volume_group: vagrant-vg
 
@@ -6,5 +8,3 @@ cluster_interface: enp0s8
 use_userspace_proxy: true
 
 artifact_namespace: vagrant
-
-storage_rook: true
