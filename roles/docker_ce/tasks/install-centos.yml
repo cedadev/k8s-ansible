@@ -1,17 +1,7 @@
 ---
 
-- name: Install required packages
-  yum: name={{ item }} state=latest
-  with_items:
-    - yum-utils
-    - device-mapper-persistent-data
-    - lvm2
-
-- name: Add yum repository for Docker
-  shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-
 - name: Install Docker
-  yum: update_cache=yes name=docker-ce state=latest
+  yum: update_cache=yes name=docker state=latest
 
 - name: Ensure Docker is started
   service:
