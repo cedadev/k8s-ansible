@@ -1,5 +1,10 @@
 ---
 
+- name: Ensure SELinux is disabled
+  selinux:
+    state: disabled
+  when: ansible_distribution == 'CentOS'
+
 - name: Install epel-release
   yum: name=epel-release state=latest
   when: ansible_distribution == 'CentOS'
