@@ -1,0 +1,27 @@
+---
+
+- name: Install epel-release
+  yum: name=epel-release state=latest
+  when: ansible_distribution == 'CentOS'
+
+- name: Install Nginx (CentOS)
+  yum: update_cache=yes name=nginx state=latest
+  notify:
+    - restart nginx
+  when: ansible_distribution == 'CentOS'
+
+- name: Install Nginx (Ubuntu)
+  apt: update_cache=yes name=nginx state=latest
+  notify:
+    - restart nginx
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Install Nginx configuration
+  template:
+    src: nginx.conf
+    dest: /etc/nginx/nginx.conf
+  notify:
+    - restart nginx
+
+- name: Ensure nginx starts at boot time
+  service: name=nginx enabled=yes

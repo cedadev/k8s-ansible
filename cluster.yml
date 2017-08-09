@@ -1,6 +1,6 @@
 ---
 
-- hosts: kube_hosts
+- hosts: all
   remote_user: root
   force_handlers: yes
   roles:
@@ -8,6 +8,11 @@
       when: setup_networking is defined and setup_networking
     - role: setup_storage
       when: setup_storage is defined and setup_storage
+
+- hosts: kube_hosts
+  remote_user: root
+  force_handlers: yes
+  roles:
     - docker_ce
     - kubernetes
     - role: storage_rook
@@ -20,3 +25,9 @@
         - install_helm is not defined or install_helm
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
+
+- hosts: proxy_hosts
+  remote_user: root
+  force_handlers: yes
+  roles:
+    - proxy_passthru

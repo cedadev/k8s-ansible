@@ -19,8 +19,8 @@ mkdir -p /root/.ssh
 cp ~vagrant/.ssh/authorized_keys /root/.ssh
 SHELL
 
-  config.vm.define "kube-master" do |master|
-    master.vm.hostname = "kube-master"
+  config.vm.define "kube-proxy" do |master|
+    master.vm.hostname = "kube-proxy"
     master.vm.network "private_network", ip: "172.28.128.100"
   end
 
@@ -39,10 +39,11 @@ SHELL
           ansible.limit = "all"
           ansible.force_remote_user = false
           ansible.groups = {
-            "kube_masters"  => ["kube-master"],
-            "kube_nodes" => (0..N_NODES-1).map { |n| "kube-node%d" % n },
+            "proxy_hosts" => ["kube-proxy"],
+            "kube_masters"  => ["kube-node0"],
+            "kube_nodes" => (1..N_NODES-1).map { |n| "kube-node%d" % n },
             "kube_hosts:children" => ["kube_masters", "kube_nodes"],
-            "vagrant_hosts:children" => ["kube_hosts"]
+            "vagrant_hosts:children" => ["proxy_hosts", "kube_hosts"]
           }
         end
       end
