@@ -43,7 +43,13 @@ SHELL
             "kube_masters"  => ["kube-node0"],
             "kube_nodes" => (1..N_NODES-1).map { |n| "kube-node%d" % n },
             "kube_hosts:children" => ["kube_masters", "kube_nodes"],
-            "vagrant_hosts:children" => ["proxy_hosts", "kube_hosts"]
+            "vagrant_hosts:children" => ["proxy_hosts", "kube_hosts"],
+            "vagrant_hosts:vars" => [
+              "setup_networking=1",
+              "cluster_interface=enp0s8",
+              "use_userspace_proxy=1",
+              "artifact_namespace=vagrant",
+            ]
           }
         end
       end
