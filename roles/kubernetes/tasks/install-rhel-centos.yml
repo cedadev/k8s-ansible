@@ -30,6 +30,7 @@
 
 - name: Enable EPEL
   yum: name=epel-release state=latest
+  when: not epel_preinstalled
 
 - name: Install jq
   yum: name=jq state=latest

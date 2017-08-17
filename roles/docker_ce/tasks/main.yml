@@ -4,6 +4,6 @@
   include: install-ubuntu.yml
   when: ansible_distribution == 'Ubuntu'
 
-- name: Install CentOS
-  include: install-centos.yml
-  when: ansible_distribution == 'CentOS'
+- name: Install CentOS/RHEL
+  include: install-rhel-centos.yml
+  when: ansible_distribution in ['RedHat', 'CentOS']
