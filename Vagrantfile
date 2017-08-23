@@ -7,11 +7,6 @@ N_NODES = 2
 Vagrant.configure(2) do |config|
   config.vm.box = "boxcutter/ubuntu1604"
 
-  config.vm.provider :virtualbox do |vb|
-    vb.cpus = 2
-    vb.memory = 2048
-  end
-
   # Allow root login with same key as vagrant user
   config.vm.provision :shell, inline: <<-SHELL
 echo "Copying SSH key to root..."
@@ -19,9 +14,14 @@ mkdir -p /root/.ssh
 cp ~vagrant/.ssh/authorized_keys /root/.ssh
 SHELL
 
-  config.vm.define "kube-proxy" do |master|
-    master.vm.hostname = "kube-proxy"
-    master.vm.network "private_network", ip: "172.28.128.100"
+  config.vm.define "kube-proxy" do |proxy|
+    proxy.vm.hostname = "kube-proxy"
+    proxy.vm.network "private_network", ip: "172.28.128.100"
+
+    proxy.vm.provider :virtualbox do |vb|
+      vb.cpus = 1
+      vb.memory = 512
+    end
   end
 
   (0..N_NODES-1).each do |n|
@@ -29,6 +29,11 @@ SHELL
     config.vm.define node_name do |node|
       node.vm.hostname = node_name
       node.vm.network "private_network", ip: "172.28.128.%s" % (101 + n)
+
+      node.vm.provider :virtualbox do |vb|
+        vb.cpus = 2
+        vb.memory = 3072
+      end
 
       if n == (N_NODES-1)
         # On the final node (i.e. when all the machines in the cluster have started)
