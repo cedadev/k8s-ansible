@@ -1,19 +1,67 @@
 ---
 
-- include: install-ubuntu.yml
-  when: ansible_distribution == 'Ubuntu'
+- name: Ensure SELinux is disabled
+  selinux:
+    state: disabled
 
-- include: install-rhel-centos.yml
-  when: ansible_distribution in ['RedHat', 'CentOS']
+- name: Disable swap
+  command: swapoff --all
 
-- name: Initialise Kubernetes control plane
-  command: kubeadm init --apiserver-advertise-address={{ kube_master_ip }}
+- name: Remove swap volumes from /etc/fstab
+  lineinfile:
+    path: /etc/fstab
+    state: absent
+    # This should match all lines with an fstype of "swap"
+    regexp: '^[^\s]+\s+[^\s]+\s+swap\s+'
+
+- name: Add yum repository for Kubernetes
+  yum_repository:
+    name: kubernetes
+    description: Kubernetes repo
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+    gpgcheck: yes
+    repo_gpgcheck: yes
+    gpgkey: >
+      https://packages.cloud.google.com/yum/doc/yum-key.gpg
+      https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+- name: Install Kubernetes
+  yum:
+    update_cache: yes
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - kubelet
+    - kubeadm
+    - kubectl
+
+- name: Ensure kubelet is started
+  service:
+    name: kubelet
+    state: started
+    enabled: yes
+
+- name: Enable EPEL
+  yum:
+    name: epel-release
+    state: latest
+  when: not epel_preinstalled
+
+- name: Install jq
+  yum:
+    name: jq
+    state: latest
+  when: inventory_hostname in groups['kube_masters']
+
+# Set the token TTL so that the token doesn't expire
+- name: Initialise Kubernetes master
+  command: kubeadm init --apiserver-advertise-address={{ kube_master_ip }} --token-ttl=0
   args:
     creates: /etc/kubernetes/kubelet.conf
   register: kubeadm_init
   when: inventory_hostname in groups['kube_masters']
 
-- name: Update proxy-mode for proxy pods
+- name: Update proxy-mode for kube-proxy
   shell: >
     kubectl -n kube-system get ds -l k8s-app=kube-proxy -o json |
       jq '.items[0].spec.template.spec.containers[0].command |= .+ ["--proxy-mode=userspace"]' |
@@ -21,8 +69,7 @@
     kubectl -n kube-system delete pods -l k8s-app=kube-proxy
   when:
     - inventory_hostname in groups['kube_masters']
-    - kubeadm_init|changed
-    - use_userspace_proxy is defined
+    - kubeadm_init is changed
     - use_userspace_proxy
 
 - name: Install pod network
@@ -32,7 +79,7 @@
 - name: Ensure kube-dns has started
   shell: >
     kubectl -n kube-system get deployment -l k8s-app=kube-dns -o json |
-      jq '(.items|length > 0) and (.items|map(.status.replicas == .status.availableReplicas)|all)'
+      jq '(.items|length > 0) and (.items|map(.spec.replicas == .status.availableReplicas)|all)'
   register: result
   until: result.stdout == "true"
   retries: 30
@@ -43,13 +90,13 @@
   command: kubectl taint nodes --all node-role.kubernetes.io/master-
   when:
     - inventory_hostname in groups['kube_masters']
-    - isolate_master is not defined or not isolate_master
+    - not isolate_master
   register: result
   changed_when: result.rc == 0
   failed_when: result.rc != 0 and 'not found' not in result.stderr
 
 - name: Get kubeadm token
-  shell: kubeadm token list | sed -n 2p | awk '{ print $1 };'
+  shell: kubeadm token list | tail -n +2 | awk '{ print $1 };'
   register: kubeadm_token
   when: inventory_hostname in groups['kube_masters']
 
@@ -64,18 +111,7 @@
   when: inventory_hostname in groups['kube_nodes']
 
 - name: Join Kubernetes cluster
-  command: kubeadm join --skip-preflight-checks --token={{ kubeadm_token }} {{ kube_master_ip }}:6443
+  command: kubeadm join --token={{ kubeadm_token }} --discovery-token-unsafe-skip-ca-verification {{ kube_master_ip }}:6443
   args:
     creates: /etc/kubernetes/kubelet.conf
   when: inventory_hostname in groups['kube_nodes']
-
-- name: Make local artifacts directory
-  file: path={{ playbook_dir }}/.artifacts/{{ artifact_namespace }} state=directory
-  delegate_to: 127.0.0.1
-
-- name: Retrieve Kubernetes admin config
-  fetch:
-    src: /etc/kubernetes/admin.conf
-    dest: "{{ playbook_dir }}/.artifacts/{{ artifact_namespace }}/kubernetes-admin.conf"
-    flat: yes
-  when: inventory_hostname in groups['kube_masters']

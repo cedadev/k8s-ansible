@@ -1,0 +1,2 @@
+# Unless otherwise specified, use the default interface for cluster communication
+cluster_interface: "{{ ansible_default_ipv4.interface }}"

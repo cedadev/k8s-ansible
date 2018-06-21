@@ -1,3 +1,9 @@
-kube_master_ip: "{{ hostvars[groups['kube_masters'][0]]['ansible_' + cluster_interface].ipv4.address }}"
-
 epel_preinstalled: false
+
+# By default, use the IP of the default interface to advertise the Kubernetes master
+kube_master_ip: "{{ hostvars[groups['kube_masters'][0]].ansible_default_ipv4.address }}"
+
+# If true, switch proxy mode from iptables to userspace
+use_userspace_proxy: false
+# If true, prevent work from being scheduled on the master
+isolate_master: true

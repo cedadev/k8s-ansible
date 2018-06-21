@@ -1,9 +1,13 @@
 ---
 
-- name: Install Ubuntu
-  include: install-ubuntu.yml
-  when: ansible_distribution == 'Ubuntu'
+- name: Install Docker
+  yum:
+    update_cache: yes
+    name: docker
+    state: latest
 
-- name: Install CentOS/RHEL
-  include: install-rhel-centos.yml
-  when: ansible_distribution in ['RedHat', 'CentOS']
+- name: Ensure Docker is started
+  service:
+    name: docker
+    state: started
+    enabled: yes
