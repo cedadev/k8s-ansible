@@ -1,19 +1,27 @@
 ---
 
-- name: Create manifests directory
-  file: path=/root/manifests state=directory
+- name: Check if Helm is installed
+  command: which helm
+  register: helm_installed
+  changed_when: false
+  ignore_errors: yes
 
-- name: Copy nginx ingress controller manifest
-  template: src=nginx-ingress-controller.yml dest=/root/manifests/ mode="u=rw,g=,o="
+- name: Install Helm if not present
+  import_role:
+    name: helm
+  when: helm_installed is failed
 
-- name: Install nginx ingress controller
-  shell: kubectl apply -f /root/manifests/nginx-ingress-controller.yml --force
+- name: Update Helm repositories
+  command: helm repo update
 
-- name: Ensure nginx ingress controller has started
-  shell: >
-    kubectl -n nginx-ingress get deployment -l app=nginx-ingress-controller -o json |
-      jq '(.items|length > 0) and (.items|map(.status.replicas == .status.availableReplicas)|all)'
-  register: result
-  until: result.stdout == "true"
-  retries: 30
-  delay: 10
+# We use a daemonset on the host network
+# The proxy can then load-balance port 80/443 across all cluster nodes
+- name: Install Nginx ingress controller using Helm
+  command: >
+    helm upgrade nginx-ingress stable/nginx-ingress
+      --install --namespace=nginx-ingress
+      --set rbac.create=true
+      --set serviceAccount.create=true
+      --set controller.kind=DaemonSet
+      --set controller.hostNetwork=true
+      --set controller.service.type=ClusterIP

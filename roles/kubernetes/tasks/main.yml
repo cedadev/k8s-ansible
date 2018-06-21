@@ -86,11 +86,12 @@
   delay: 10
   when: inventory_hostname in groups['kube_masters']
 
+# If the host is in masters and nodes, allow scheduling of work on it
 - name: Allow scheduling of work on master
   command: kubectl taint nodes --all node-role.kubernetes.io/master-
   when:
     - inventory_hostname in groups['kube_masters']
-    - not isolate_master
+    - inventory_hostname in groups['kube_nodes']
   register: result
   changed_when: result.rc == 0
   failed_when: result.rc != 0 and 'not found' not in result.stderr
@@ -108,10 +109,14 @@
 - name: Set kubeadm_token fact (nodes)
   set_fact:
     kubeadm_token: "{{ hostvars[groups['kube_masters'][0]].kubeadm_token }}"
-  when: inventory_hostname in groups['kube_nodes']
+  when:
+    - inventory_hostname not in groups['kube_masters']
+    - inventory_hostname in groups['kube_nodes']
 
 - name: Join Kubernetes cluster
   command: kubeadm join --token={{ kubeadm_token }} --discovery-token-unsafe-skip-ca-verification {{ kube_master_ip }}:6443
   args:
     creates: /etc/kubernetes/kubelet.conf
-  when: inventory_hostname in groups['kube_nodes']
+  when:
+    - inventory_hostname not in groups['kube_masters']
+    - inventory_hostname in groups['kube_nodes']

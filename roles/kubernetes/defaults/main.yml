@@ -5,5 +5,3 @@ kube_master_ip: "{{ hostvars[groups['kube_masters'][0]].ansible_default_ipv4.add
 
 # If true, switch proxy mode from iptables to userspace
 use_userspace_proxy: false
-# If true, prevent work from being scheduled on the master
-isolate_master: true

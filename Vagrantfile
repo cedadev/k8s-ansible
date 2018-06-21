@@ -57,14 +57,13 @@ Vagrant.configure(2) do |config|
           ansible.groups = {
             "proxy_hosts" => ["kube-proxy"],
             "kube_masters"  => ["kube-node0"],
-            "kube_nodes" => (1..N_NODES-1).map { |n| "kube-node%d" % n },
+            "kube_nodes" => (0..N_NODES-1).map { |n| "kube-node%d" % n },
             "kube_hosts:children" => ["kube_masters", "kube_nodes"],
             "vagrant_hosts:children" => ["proxy_hosts", "kube_hosts"],
             "vagrant_hosts:vars" => [
               "cluster_interface=eth1",
               "kube_master_ip=172.28.128.101",
               "use_userspace_proxy=1",
-              "isolate_master=0",
             ]
           }
         end

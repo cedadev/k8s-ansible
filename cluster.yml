@@ -5,9 +5,7 @@
   force_handlers: yes
   roles:
     - role: setup_networking
-      when: setup_networking is defined and setup_networking
-    - role: setup_storage
-      when: setup_storage is defined and setup_storage
+      when: setup_networking is not defined or setup_networking
 
 - hosts: kube_hosts
   remote_user: root
@@ -15,14 +13,17 @@
   roles:
     - docker_ce
     - kubernetes
-    - role: storage_rook
-      when: storage_rook is not defined or storage_rook
-    - role: ingress_nginx
-      when: inventory_hostname in groups['kube_masters']
+    # Only install Helm if it is specifically asked for
+    # It is required for the Nginx ingress controller, but that role will install it if required
     - role: helm
       when:
         - inventory_hostname in groups['kube_masters']
-        - install_helm is not defined or install_helm
+        - install_helm is defined and install_helm
+    # Install Nginx ingress controller unless otherwise specified
+    - role: ingress_nginx
+      when:
+        - inventory_hostname in groups['kube_masters']
+        - ingress_nginx is not defined or ingress_nginx
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
 
