@@ -45,3 +45,6 @@
 
 - name: Install/upgrade tiller
   command: helm init --service-account=tiller --upgrade
+
+- name: Ensure tiller has started
+  shell: kubectl -n kube-system rollout status deployment tiller-deploy

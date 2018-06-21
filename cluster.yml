@@ -27,8 +27,8 @@
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
 
-- hosts: proxy_hosts
-  remote_user: root
-  force_handlers: yes
-  roles:
-    - proxy_passthru
+#- hosts: proxy_hosts
+#  remote_user: root
+#  force_handlers: yes
+#  roles:
+#    - proxy_passthru

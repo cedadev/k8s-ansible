@@ -77,13 +77,7 @@
   when: inventory_hostname in groups['kube_masters']
 
 - name: Ensure kube-dns has started
-  shell: >
-    kubectl -n kube-system get deployment -l k8s-app=kube-dns -o json |
-      jq '(.items|length > 0) and (.items|map(.spec.replicas == .status.availableReplicas)|all)'
-  register: result
-  until: result.stdout == "true"
-  retries: 30
-  delay: 10
+  shell: kubectl -n kube-system rollout status deployment kube-dns
   when: inventory_hostname in groups['kube_masters']
 
 # If the host is in masters and nodes, allow scheduling of work on it

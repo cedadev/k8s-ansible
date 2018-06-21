@@ -15,13 +15,19 @@
   command: helm repo update
 
 # We use a daemonset on the host network
+# Make sure to use the RollingUpdate update strategy
 # The proxy can then load-balance port 80/443 across all cluster nodes
 - name: Install Nginx ingress controller using Helm
   command: >
     helm upgrade nginx-ingress stable/nginx-ingress
-      --install --namespace=nginx-ingress
+      --install
+      --namespace=nginx-ingress
       --set rbac.create=true
       --set serviceAccount.create=true
       --set controller.kind=DaemonSet
+      --set controller.updateStrategy.type=RollingUpdate
       --set controller.hostNetwork=true
       --set controller.service.type=ClusterIP
+
+- name: Ensure Nginx ingress controller has started
+  command: kubectl -n nginx-ingress rollout status daemonset nginx-ingress-controller
