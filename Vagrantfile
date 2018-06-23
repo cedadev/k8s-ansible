@@ -3,7 +3,6 @@
 
 N_NODES = 2
 
-
 Vagrant.configure(2) do |config|
   config.vm.box = "centos/7"
 
@@ -18,26 +17,16 @@ Vagrant.configure(2) do |config|
   #   See https://github.com/mitchellh/vagrant/issues/8166
   config.vm.provision :shell, run: "always", inline: "ifup eth1"
 
-  config.vm.define "kube-proxy" do |proxy|
-    proxy.vm.hostname = "kube-proxy"
-    proxy.vm.network "private_network", ip: "172.28.128.100"
-
-    proxy.vm.provider :virtualbox do |vb|
-      vb.cpus = 1
-      vb.memory = 512
-    end
-  end
-
   (0..N_NODES-1).each do |n|
     node_name = "kube-node%d" % n
-    node_ip = "172.28.128.%s" % (101 + n)
+    node_ip = "172.28.128.%s" % (100 + n)
     config.vm.define node_name do |node|
       node.vm.hostname = node_name
       node.vm.network "private_network", ip: node_ip
 
       node.vm.provider :virtualbox do |vb|
         vb.cpus = 2
-        vb.memory = 3072
+        vb.memory = 2048
       end
 
       # Make sure Kubernetes service traffic is routed over eth1
@@ -62,7 +51,7 @@ Vagrant.configure(2) do |config|
             "vagrant_hosts:children" => ["proxy_hosts", "kube_hosts"],
             "vagrant_hosts:vars" => [
               "cluster_interface=eth1",
-              "kube_master_ip=172.28.128.101",
+              "kube_master_ip=172.28.128.100",
               "use_userspace_proxy=1",
             ]
           }

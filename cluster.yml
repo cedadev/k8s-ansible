@@ -1,18 +1,12 @@
 ---
 
-- hosts: all
+- hosts: kube_hosts
   remote_user: root
   force_handlers: yes
   roles:
     - role: setup_networking
       when: setup_networking is not defined or setup_networking
-
-- hosts: kube_hosts
-  remote_user: root
-  force_handlers: yes
-  roles:
-    - docker_ce
-    - kubernetes
+    - kubeadm
     # Only install Helm if it is specifically asked for
     # It is required for the Nginx ingress controller, but that role will install it if required
     - role: helm
@@ -26,9 +20,3 @@
         - ingress_nginx is not defined or ingress_nginx
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
-
-#- hosts: proxy_hosts
-#  remote_user: root
-#  force_handlers: yes
-#  roles:
-#    - proxy_passthru

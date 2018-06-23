@@ -1,0 +1,70 @@
+---
+
+- name: Install Docker
+  yum:
+    name: docker
+    state: latest
+
+- name: Ensure Docker is started
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Install Kubernetes
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - "kubelet-{{ kubernetes_version }}"
+    - "kubeadm-{{ kubernetes_version }}"
+    - "kubectl-{{ kubernetes_version }}"
+
+- name: Ensure kubelet is started
+  service:
+    name: kubelet
+    state: started
+    enabled: yes
+
+# Set the token TTL so that the token doesn't expire
+- name: Initialise Kubernetes master
+  command: kubeadm init --apiserver-advertise-address={{ kube_master_ip }} --token-ttl=0
+  args:
+    creates: /etc/kubernetes/kubelet.conf
+  register: kubeadm_init
+  when: inventory_hostname in groups['kube_masters']
+
+- name: Update proxy-mode for kube-proxy
+  shell: >
+    kubectl -n kube-system get ds -l k8s-app=kube-proxy -o json |
+      jq '.items[0].spec.template.spec.containers[0].command |= .+ ["--proxy-mode=userspace"]' |
+      kubectl apply -f - &&
+    kubectl -n kube-system delete pods -l k8s-app=kube-proxy
+  when:
+    - inventory_hostname in groups['kube_masters']
+    - kubeadm_init is changed
+    - use_userspace_proxy
+
+- name: Install pod network
+  shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+  when: inventory_hostname in groups['kube_masters']
+
+- name: Ensure kube-dns has started
+  shell: kubectl -n kube-system rollout status deployment kube-dns
+  when: inventory_hostname in groups['kube_masters']
+
+- name: Get kubeadm token
+  shell: kubeadm token list | tail -n +2 | awk '{ print $1 };'
+  register: kubeadm_token
+  delegate_to: "{{ groups['kube_masters'][0] }}"
+  when:
+    - inventory_hostname not in groups['kube_masters']
+    - inventory_hostname in groups['kube_nodes']
+
+- name: Join Kubernetes cluster
+  command: kubeadm join --token={{ kubeadm_token.stdout }} --discovery-token-unsafe-skip-ca-verification {{ kube_master_ip }}:6443
+  args:
+    creates: /etc/kubernetes/kubelet.conf
+  when:
+    - inventory_hostname not in groups['kube_masters']
+    - inventory_hostname in groups['kube_nodes']

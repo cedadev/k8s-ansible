@@ -1,0 +1,131 @@
+---
+
+# For the moment, we only support single-master clusters
+- name: Ensure single master only
+  fail:
+    msg: This playbook only supports single master clusters (for now)
+  when: groups['kube_masters']|length > 1
+
+- name: Ensure SELinux is disabled
+  selinux:
+    state: disabled
+
+- name: Disable swap
+  command: swapoff --all
+
+- name: Remove swap volumes from /etc/fstab
+  lineinfile:
+    path: /etc/fstab
+    state: absent
+    # This should match all lines with an fstype of "swap"
+    regexp: '^[^\s]+\s+[^\s]+\s+swap\s+'
+
+- name: Add yum repository for Kubernetes
+  yum_repository:
+    name: kubernetes
+    description: Kubernetes repo
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+    gpgcheck: yes
+    repo_gpgcheck: yes
+    gpgkey: >
+      https://packages.cloud.google.com/yum/doc/yum-key.gpg
+      https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+- name: Refresh yum package index
+  command: yum makecache -y
+  args:
+    warn: no
+
+- name: Install Yum versionlock plugin
+  yum:
+    name: yum-plugin-versionlock
+    state: latest
+
+- name: Enable EPEL
+  yum:
+    name: epel-release
+    state: latest
+  when: not epel_preinstalled
+
+- name: Install jq
+  yum:
+    name: jq
+    state: latest
+
+- name: Remove locks on Docker and Kubernetes versions
+  command: yum versionlock delete docker kubelet kubeadm kubectl
+  args:
+    warn: no
+  register: versionlock_rm
+  failed_when: versionlock_rm.rc != 0 and 'no matches' not in versionlock_rm.stderr
+
+- name: Find latest available Kubernetes version
+  shell: >
+    set -o pipefail ;
+    yum list available kubelet --showduplicates -q |
+      tail -n -1 |
+      tr -s " " |
+      cut -d " " -f 2 |
+      cut -d "-" -f 1
+  changed_when: false
+  register: kubelet_available
+
+- name: Set latest available Kubernetes version fact
+  set_fact:
+    kubernetes_version_latest: "{{ kubelet_available.stdout }}"
+
+- debug:
+    msg: "Latest available Kubernetes version: {{ kubernetes_version_latest }}"
+
+- name: Find installed Kubernetes version
+  shell: >
+    set -o pipefail ;
+    yum list installed kubelet -q |
+      tail -n -1 |
+      tr -s " " |
+      cut -d " " -f 2 |
+      cut -d "-" -f 1
+  changed_when: false
+  ignore_errors: yes
+  register: kubelet_installed
+
+- name: Set installed Kubernetes version fact
+  set_fact:
+    kubernetes_version_installed: "{{ kubelet_installed.stdout }}"
+  when: kubelet_installed is not failed
+
+- debug:
+    msg: "Installed Kubernetes version: {{ kubernetes_version_installed|default('none') }}"
+
+- name: Set requested Kubernetes version fact
+  set_fact:
+    kubernetes_version: "{{ kubernetes_version_latest }}"
+  when: kubernetes_version is not defined
+
+- debug:
+    msg: "Requested Kubernetes version: {{ kubernetes_version }}"
+
+- name: Upgrading existing nodes
+  include_tasks: "upgrade.yml"
+  when:
+    - kubernetes_version_installed is defined
+    - kubernetes_version_installed != kubernetes_version
+
+- name: Install new nodes
+  include_tasks: "install.yml"
+  when: kubernetes_version_installed is not defined
+
+- name: Lock Docker and Kubernetes versions
+  command: yum versionlock docker kubelet kubeadm kubectl
+  args:
+    warn: no
+
+# If the master is also in nodes, allow scheduling of work on it
+- name: Allow scheduling of work on master
+  command: kubectl taint nodes --all node-role.kubernetes.io/master-
+  when:
+    - inventory_hostname in groups['kube_masters']
+    - inventory_hostname in groups['kube_nodes']
+  register: result
+  changed_when: result.rc == 0
+  failed_when: result.rc != 0 and 'not found' not in result.stderr

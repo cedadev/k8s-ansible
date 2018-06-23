@@ -17,6 +17,8 @@
 # We use a daemonset on the host network
 # Make sure to use the RollingUpdate update strategy
 # The proxy can then load-balance port 80/443 across all cluster nodes
+# Set minAvailable for the default backend to 0 as it is more important to be able to drain nodes
+#   The alternative would be to use 2 replicas, but it's not worth it for this case
 - name: Install Nginx ingress controller using Helm
   command: >
     helm upgrade nginx-ingress stable/nginx-ingress
@@ -28,6 +30,7 @@
       --set controller.updateStrategy.type=RollingUpdate
       --set controller.hostNetwork=true
       --set controller.service.type=ClusterIP
+      --set defaultBackend.minAvailable=0
 
 - name: Ensure Nginx ingress controller has started
   command: kubectl -n nginx-ingress rollout status daemonset nginx-ingress-controller
