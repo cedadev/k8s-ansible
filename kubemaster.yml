@@ -4,6 +4,7 @@
   remote_user: root
   roles:
     - kubeadm
+    - helm
   vars:
     kube_role: master
   environment:

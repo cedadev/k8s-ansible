@@ -17,16 +17,16 @@
     dest: /opt/helm/{{ helm_version }}
     remote_src: yes
 
-- name: Create symlink in /opt for installed version
+- name: Symlink latest version
   file:
     src: /opt/helm/{{ helm_version }}
     dest: /opt/helm/latest
     state: link
 
-- name: Create symlink in /usr/local/bin to helm executable
+- name: Symlink Helm executable to /usr/local/bin
   file:
     src: /opt/helm/latest/linux-amd64/helm
-    dest: /usr/local/bin/helm
+    dest: /usr/bin/helm
     state: link
 
 - name: Create service account for tiller
@@ -43,8 +43,15 @@
   changed_when: result.rc == 0
   failed_when: result.rc != 0 and 'AlreadyExists' not in result.stderr
 
+# Add a toleration to the tiller pod spec so it is able to run on the master node
 - name: Install/upgrade tiller
-  command: helm init --service-account=tiller --upgrade
+  command: >
+    helm init
+      --upgrade
+      --service-account tiller
+      --override "spec.template.spec.tolerations[0].key"="node-role.kubernetes.io/master"
+      --override "spec.template.spec.tolerations[0].operator"="Exists"
+      --override "spec.template.spec.tolerations[0].effect"="NoSchedule"
 
 - name: Ensure tiller has started
   shell: kubectl -n kube-system rollout status deployment tiller-deploy
