@@ -1,24 +1,13 @@
 ---
 
-- name: Check if Helm is installed
-  command: which helm
-  register: helm_installed
-  changed_when: false
-  ignore_errors: yes
-
-- name: Install Helm if not present
-  import_role:
-    name: helm
-  when: helm_installed is failed
-
 - name: Update Helm repositories
   command: helm repo update
 
-# We use a daemonset on the host network
+# Deploy the ingress controller to the master node, using the host network
+# This means that we can expose the cluster just by exposing the master node
 # Make sure to use the RollingUpdate update strategy
-# The proxy can then load-balance port 80/443 across all cluster nodes
-# Set minAvailable for the default backend to 0 as it is more important to be able to drain nodes
-#   The alternative would be to use 2 replicas, but it's not worth it for this case
+# Set minAvailable to 0 for the controller and the default backend as not
+# doing so would prevent us from draining the master for maintenance
 - name: Install Nginx ingress controller using Helm
   command: >
     helm upgrade nginx-ingress stable/nginx-ingress
@@ -26,11 +15,15 @@
       --namespace=nginx-ingress
       --set rbac.create=true
       --set serviceAccount.create=true
-      --set controller.kind=DaemonSet
       --set controller.updateStrategy.type=RollingUpdate
       --set controller.hostNetwork=true
       --set controller.service.type=ClusterIP
+      --set controller.tolerations[0].key=node-role.kubernetes.io/master
+      --set controller.tolerations[0].operator=Exists
+      --set controller.tolerations[0].effect=NoSchedule
+      --set controller.nodeSelector."node-role\.kubernetes\.io/master"=""
+      --set controller.minAvailable=0
       --set defaultBackend.minAvailable=0
 
 - name: Ensure Nginx ingress controller has started
-  command: kubectl -n nginx-ingress rollout status daemonset nginx-ingress-controller
+  command: kubectl -n nginx-ingress rollout status deployment nginx-ingress-controller
