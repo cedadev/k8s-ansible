@@ -1,7 +1,9 @@
-epel_preinstalled: false
+# This is the IPv4 address of the node
+# If not given, use the default IPv4 address for the node
+host_ip: "{{ ansible_default_ipv4.address }}"
 
-# By default, use the IP of the default interface to advertise the Kubernetes master
-kube_master_ip: "{{ hostvars[groups['kube_masters'][0]].ansible_default_ipv4.address }}"
+# The default Kubernetes version
+kubernetes_version: "1.10"
 
-# If true, switch proxy mode from iptables to userspace
-use_userspace_proxy: false
+# By default, use the iptables proxy
+userspace_proxy: false

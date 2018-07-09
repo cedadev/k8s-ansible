@@ -1,0 +1,10 @@
+---
+
+- hosts: all
+  remote_user: root
+  roles:
+    - kubeadm
+  vars:
+    kube_role: master
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf

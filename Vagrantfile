@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-N_NODES = 2
+N_MINIONS = 2
 
 Vagrant.configure(2) do |config|
   config.vm.box = "centos/7"
@@ -17,45 +17,53 @@ Vagrant.configure(2) do |config|
   #   See https://github.com/mitchellh/vagrant/issues/8166
   config.vm.provision :shell, run: "always", inline: "ifup eth1"
 
-  (0..N_NODES-1).each do |n|
-    node_name = "kube-node%d" % n
-    node_ip = "172.28.128.%s" % (100 + n)
-    config.vm.define node_name do |node|
-      node.vm.hostname = node_name
-      node.vm.network "private_network", ip: node_ip
+  # Make sure Kubernetes service traffic is routed over eth1
+  # This is only necessary because eth1 is not the default interface
+  # We can't just make eth1 the default interface because it won't route traffic to the internet
+  config.vm.provision :shell, inline: <<-SHELL
+    my_ip="$(ip addr show eth1 | grep "inet " | awk '{ print $2; }' | cut -d "/" -f 1)"
+    echo "10.96.0.0/12 via ${my_ip} dev eth1" > /etc/sysconfig/network-scripts/route-eth1
+    systemctl restart network
+  SHELL
+    
+  # Give each host 2 CPUs and 2GB RAM
+  config.vm.provider :virtualbox do |vb|
+    vb.cpus = 2
+    vb.memory = 2048
+  end
 
-      node.vm.provider :virtualbox do |vb|
-        vb.cpus = 2
-        vb.memory = 2048
-      end
+  # Use a pre-defined token
+  kubeadm_token = "51mhbs.oc6k36jrreq8dy6n"
 
-      # Make sure Kubernetes service traffic is routed over eth1
-      # This is necessary only because cluster traffic should not use the default route
-      node.vm.provision :shell,
-        run: "always",
-        inline: "ip route add 10.96.0.0/12 via %s dev eth1" % node_ip
+  config.vm.define "kube-master" do |master|
+    master.vm.hostname = "kube-master"
+    master.vm.network :private_network, ip: "172.28.128.100"
 
-      if n == (N_NODES-1)
-        # On the final node (i.e. when all the machines in the cluster have started)
-        # we run the playbook
-        node.vm.provision :ansible do |ansible|
-          ansible.playbook = "cluster.yml"
-          # ansible.verbose = "vvvv"
-          ansible.limit = "all"
-          ansible.force_remote_user = false
-          ansible.groups = {
-            "proxy_hosts" => ["kube-proxy"],
-            "kube_masters"  => ["kube-node0"],
-            "kube_nodes" => (0..N_NODES-1).map { |n| "kube-node%d" % n },
-            "kube_hosts:children" => ["kube_masters", "kube_nodes"],
-            "vagrant_hosts:children" => ["proxy_hosts", "kube_hosts"],
-            "vagrant_hosts:vars" => [
-              "cluster_interface=eth1",
-              "kube_master_ip=172.28.128.100",
-              "use_userspace_proxy=1",
-            ]
-          }
-        end
+    master.vm.provision :ansible_local do |ansible|
+      ansible.playbook = "kubemaster.yml"
+      ansible.become = true
+      ansible.extra_vars = {
+        "host_ip" => "172.28.128.100",
+        "userspace_proxy" => true,
+        "kubeadm_token" => kubeadm_token,
+      }
+    end
+  end
+
+  (1..N_MINIONS).each do |n|
+    host_name = "kube-minion%d" % n
+    config.vm.define host_name do |node|
+      node.vm.hostname = host_name
+      node.vm.network :private_network, ip: "172.28.128.%s" % (100 + n)
+
+      node.vm.provision :ansible_local do |ansible|
+        ansible.playbook = "kubeminion.yml"
+        ansible.become = true
+        ansible.extra_vars = {
+          "host_ip" => "172.28.128.%s" % (100 + n),
+          "kube_master_ip" => "172.28.128.100",
+          "kubeadm_token" => kubeadm_token,
+        }
       end
     end
   end

@@ -1,0 +1,50 @@
+---
+
+- name: Upgrade kubeadm and kubectl
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - kubeadm-{{ kubernetes_version_target }}
+    - kubectl-{{ kubernetes_version_target }}
+
+- name: Fetch available control plane upgrades
+  command: kubeadm upgrade plan
+
+- name: Upgrade control plane to desired version
+  command: kubeadm upgrade apply -y v{{ kubernetes_version_target }}
+
+- name: Upgrade pod network
+  shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+
+- name: Drain pods from node
+  command: kubectl drain {{ host_ip }} --ignore-daemonsets
+
+- name: Upgrade docker and kubelet
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - docker
+    - kubelet-{{ kubernetes_version_target }}
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Restart docker and kubelet
+  service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - docker
+    - kubelet
+
+- name: Wait for API server to become available after restart
+  wait_for:
+    state: started
+    port: 6443
+    delay: 10
+
+- name: Uncordon node
+  command: kubectl uncordon {{ host_ip }}

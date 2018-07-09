@@ -1,0 +1,20 @@
+---
+
+- name: Join Kubernetes cluster
+  command: >
+    kubeadm join
+      --token={{ kubeadm_token }}
+      --ignore-preflight-errors=cri
+      --node-name={{ host_ip }}
+      --discovery-token-unsafe-skip-ca-verification
+      {{ kube_master_ip }}:6443
+
+- name: Wait for node to become ready (max 5 minutes)
+  shell: >
+    set -o pipefail ;
+    kubectl get node {{ host_ip }} -o json |
+      jq -e '.status.conditions|any(.type == "Ready" and .status == "True")'
+  register: node_ready
+  until: node_ready is succeeded
+  retries: 60
+  delay: 5

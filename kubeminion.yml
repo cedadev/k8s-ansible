@@ -1,0 +1,10 @@
+---
+
+- hosts: all
+  remote_user: root
+  roles:
+    - kubeadm
+  vars:
+    kube_role: minion
+  environment:
+    KUBECONFIG: /etc/kubernetes/kubelet.conf
