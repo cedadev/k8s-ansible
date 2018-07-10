@@ -7,3 +7,6 @@ kubernetes_version: "1.10"
 
 # By default, use the iptables proxy
 userspace_proxy: false
+
+# The default cluster CIDR is the netmask of the default network
+cluster_cidr: "{{ [ansible_default_ipv4.network, ansible_default_ipv4.netmask] | join('/') | ipaddr('net') }}"

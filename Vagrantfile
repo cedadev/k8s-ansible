@@ -25,6 +25,10 @@ Vagrant.configure(2) do |config|
     echo "10.96.0.0/12 via ${my_ip} dev eth1" > /etc/sysconfig/network-scripts/route-eth1
     systemctl restart network
   SHELL
+
+  # Install python-netaddr
+  # This is required for the ipaddr filter, but must be done *before* the playbooks are run
+  config.vm.provision :shell, inline: "yum install -y python-netaddr"
     
   # Give each host 2 CPUs and 2GB RAM
   config.vm.provider :virtualbox do |vb|
@@ -44,6 +48,7 @@ Vagrant.configure(2) do |config|
       ansible.become = true
       ansible.extra_vars = {
         "host_ip" => "172.28.128.100",
+        "cluster_cidr" => "172.28.128.0/24",
         "userspace_proxy" => true,
         "kubeadm_token" => kubeadm_token,
       }
@@ -61,6 +66,7 @@ Vagrant.configure(2) do |config|
         ansible.become = true
         ansible.extra_vars = {
           "host_ip" => "172.28.128.%s" % (100 + n),
+          "cluster_cidr" => "172.28.128.0/24",
           "kube_master_ip" => "172.28.128.100",
           "kubeadm_token" => kubeadm_token,
         }

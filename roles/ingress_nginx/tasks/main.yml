@@ -27,3 +27,13 @@
 
 - name: Ensure Nginx ingress controller has started
   command: kubectl -n nginx-ingress rollout status deployment nginx-ingress-controller
+
+- name: Allow external HTTP(S) traffic
+  firewalld:
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  with_items:
+    - http
+    - https

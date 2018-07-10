@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Weave Net</short>
+  <description>Ports required for the Weave overlay network.</description>
+  <port port="6783" protocol="tcp"/>
+  <port port="6783" protocol="udp"/>
+  <port port="6784" protocol="udp"/>
+</service>

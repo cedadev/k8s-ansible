@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Kubernetes Minion</short>
+  <description>Ports required for a Kubernetes minion node.</description>
+  <!-- Kubelet API -->
+  <port port="10250" protocol="tcp"/>
+  <!-- NodePort services -->
+  <port port="30000-32767" protocol="tcp"/>
+</service>

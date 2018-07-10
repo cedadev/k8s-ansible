@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Kubernetes Master</short>
+  <description>Ports required for a Kubernetes master node.</description>
+  <!-- API server -->
+  <port port="6443" protocol="tcp"/>
+  <!-- etcd -->
+  <port port="2379" protocol="tcp"/>
+  <port port="2380" protocol="tcp"/>
+  <!-- Kubelet API -->
+  <port port="10250" protocol="tcp"/>
+  <!-- kube-scheduler -->
+  <port port="10251" protocol="tcp"/>
+  <!-- kube-controller-manager -->
+  <port port="10252" protocol="tcp"/>
+</service>

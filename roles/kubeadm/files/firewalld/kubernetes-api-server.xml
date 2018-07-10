@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Kubernetes API Server</short>
+  <description>Ports required for the Kubernetes API server.</description>
+  <port port="6443" protocol="tcp"/>
+</service>
