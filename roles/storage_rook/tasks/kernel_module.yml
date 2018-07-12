@@ -1,0 +1,15 @@
+---
+
+# This is only required on nodes where the kernel version is < 4
+# Currently, this includes CentOS 7
+# See https://github.com/rook/rook/issues/1110
+- name: Load rbd kernel module
+  modprobe:
+    name: rbd
+    state: present
+
+- name: Ensure rbd kernel module is loaded on boot
+  copy:
+    content: |
+      rbd
+    dest: /etc/modules-load.d/rbd.conf

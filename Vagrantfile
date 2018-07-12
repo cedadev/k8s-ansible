@@ -26,33 +26,15 @@ Vagrant.configure(2) do |config|
     systemctl restart network
   SHELL
 
-  # Install python-netaddr
-  # This is required for the ipaddr filter, but must be done *before* the playbooks are run
-  config.vm.provision :shell, inline: "yum install -y python-netaddr"
-    
   # Give each host 2 CPUs and 2GB RAM
   config.vm.provider :virtualbox do |vb|
     vb.cpus = 2
     vb.memory = 2048
   end
 
-  # Use a pre-defined token
-  kubeadm_token = "51mhbs.oc6k36jrreq8dy6n"
-
   config.vm.define "kube-master" do |master|
     master.vm.hostname = "kube-master"
     master.vm.network :private_network, ip: "172.28.128.100"
-
-    master.vm.provision :ansible_local do |ansible|
-      ansible.playbook = "kubemaster.yml"
-      ansible.become = true
-      ansible.extra_vars = {
-        "host_ip" => "172.28.128.100",
-        "cluster_cidr" => "172.28.128.0/24",
-        "userspace_proxy" => true,
-        "kubeadm_token" => kubeadm_token,
-      }
-    end
   end
 
   (1..N_MINIONS).each do |n|
@@ -61,15 +43,21 @@ Vagrant.configure(2) do |config|
       node.vm.hostname = host_name
       node.vm.network :private_network, ip: "172.28.128.%s" % (100 + n)
 
-      node.vm.provision :ansible_local do |ansible|
-        ansible.playbook = "kubeminion.yml"
-        ansible.become = true
-        ansible.extra_vars = {
-          "host_ip" => "172.28.128.%s" % (100 + n),
-          "cluster_cidr" => "172.28.128.0/24",
-          "kube_master_ip" => "172.28.128.100",
-          "kubeadm_token" => kubeadm_token,
-        }
+      if n == N_MINIONS
+        node.vm.provision :ansible do |ansible|
+          ansible.playbook = "cluster.yml"
+          # ansible.verbose = "vvvv"
+          ansible.limit = "all"
+          ansible.force_remote_user = false
+          ansible.groups = {
+            "kube_masters"  => ["kube-master"],
+            "kube_minions" => (1..N_MINIONS).map { |n| "kube-minion%d" % n },
+          }
+          ansible.extra_vars = {
+            "cluster_interface" => "eth1",
+            "userspace_proxy" => true,
+          }
+        end
       end
     end
   end
