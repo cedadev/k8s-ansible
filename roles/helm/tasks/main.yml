@@ -23,7 +23,7 @@
     dest: /opt/helm/latest
     state: link
 
-- name: Symlink Helm executable to /usr/local/bin
+- name: Symlink Helm executable to /usr/bin
   file:
     src: /opt/helm/latest/linux-amd64/helm
     dest: /usr/bin/helm

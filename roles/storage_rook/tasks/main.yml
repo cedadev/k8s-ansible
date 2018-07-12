@@ -21,6 +21,10 @@
 - name: Ensure rook operator has started
   command: kubectl -n rook rollout status deployment rook-operator
 
+- name: Label storage nodes
+  command: kubectl label nodes {{ item }} storage-node=rook
+  with_items: "{{ storage_nodes }}"
+
 - name: Make manifests directory
   file:
     state: directory
@@ -42,32 +46,10 @@
   command: kubectl apply -f /root/manifests/rook-cluster/cluster.yaml
 
 ##
-## The cluster resource starts the monitors first, then the manager, then the OSDs
+## The cluster resource always seems to start the monitors first, then the manager, then the OSDs
+## 
+## So we wait for the OSD daemonset to exist and rollout, then sanity check the monitors and manager
 ##
-
-- name: Wait for at least one Ceph monitor replicaset to exist
-  shell: kubectl -n rook-cluster get replicaset -l app=rook-ceph-mon -o json | jq -e '.items|length > 0'
-  register: ceph_monitors_exist
-  until: ceph_monitors_exist is succeeded
-  retries: 60
-  delay: 5
-
-- name: Ensure Ceph monitors have started
-  shell: kubectl -n rook-cluster get replicaset -l app=rook-ceph-mon -o json | jq -e '.items|map(.status.availableReplicas == .spec.replicas)|all'
-  register: ceph_monitors
-  until: ceph_monitors is succeeded
-  retries: 60
-  delay: 5
-
-- name: Wait for Ceph manager deployment to exist
-  shell: kubectl -n rook-cluster get deployment -l app=rook-ceph-mgr -o json | jq -e '.items|length > 0'
-  register: ceph_manager_exists
-  until: ceph_manager_exists is succeeded
-  retries: 60
-  delay: 5
-
-- name: Ensure Ceph manager has started
-  command: kubectl -n rook-cluster rollout status deployment rook-ceph-mgr0
 
 - name: Wait for Ceph OSD daemonset to exist
   shell: kubectl -n rook-cluster get daemonset -l app=rook-ceph-osd -o json | jq -e '.items|length > 0'
@@ -78,6 +60,16 @@
 
 - name: Ensure Ceph OSDs have started
   command: kubectl -n rook-cluster rollout status daemonset rook-ceph-osd
+
+- name: Ensure Ceph monitors have started
+  shell: kubectl -n rook-cluster get replicaset -l app=rook-ceph-mon -o json | jq -e '.items|map(.status.availableReplicas == .spec.replicas)|all'
+  register: ceph_monitors
+  until: ceph_monitors is succeeded
+  retries: 60
+  delay: 5
+
+- name: Ensure Ceph manager has started
+  command: kubectl -n rook-cluster rollout status deployment rook-ceph-mgr0
 
 - name: Install default-block storage class
   command: kubectl apply -f /root/manifests/rook-cluster/storageclass.yaml

@@ -5,6 +5,17 @@ metadata:
   namespace: rook-cluster
 spec:
   dataDirHostPath: /var/lib/rook
+  # Ensure that cluster pods only run on nodes tagged for storage
+  placement:
+    all:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: storage-node
+                  operator: In
+                  values:
+                    - rook
   storage:
     useAllNodes: true
     useAllDevices: false

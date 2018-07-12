@@ -56,6 +56,9 @@ Vagrant.configure(2) do |config|
           ansible.extra_vars = {
             "cluster_interface" => "eth1",
             "userspace_proxy" => true,
+            # All the minions are storage nodes
+            # Remember that Kubernetes knows them by their IP
+            "storage_nodes" => (1..N_MINIONS).map { |n| "172.28.128.%s" % (100 + n) }
           }
         end
       end
