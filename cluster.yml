@@ -46,13 +46,20 @@
   environment:
     KUBECONFIG: /etc/kubernetes/kubelet.conf
 
-# Required for Rook because CentOS 7 has a vn3 kernel
 - hosts: infrastructure_nodes
   remote_user: root
   tasks:
+    # Required for Rook because CentOS 7 has a vn3 kernel
     - include_role:
         name: storage_rook
         tasks_from: kernel_module
+    # Label the nodes so the infrastructure components can run
+    - command: kubectl label --overwrite node {{ host_ip }} "role=infrastructure"
+      vars:
+        cluster_interface: "{{ cluster_interface | default(ansible_default_ipv4.interface) }}"
+        host_ip: "{{ hostvars[inventory_hostname]['ansible_' + cluster_interface].ipv4.address }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/kubelet.conf
 
 - hosts: kube_masters
   remote_user: root
@@ -60,5 +67,6 @@
     - helm
     - ingress_nginx
     - storage_rook
+    - kubernetes_dashboard
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf

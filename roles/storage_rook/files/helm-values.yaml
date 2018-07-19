@@ -1,0 +1,16 @@
+nodeSelector:
+  role: infrastructure
+
+tolerations:
+  - key: role
+    operator: Equal
+    value: infrastructure
+    effect: NoSchedule
+
+agent:
+  toleration: NoSchedule
+  tolerationKey: role
+
+discover:
+  toleration: NoSchedule
+  tolerationKey: role

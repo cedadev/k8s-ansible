@@ -1,14 +1,5 @@
 ---
 
-- name: Set storage label on storage nodes (attract storage pods to nodes)
-  command: kubectl label --overwrite nodes {{ item }} "{{ storage_label.key }}={{ storage_label.value }}"
-  with_items: "{{ storage_nodes }}"
-
-- name: Set storage infrastructure taint (repel other pods from nodes)
-  command: kubectl taint --overwrite nodes {{ item }} "{{ storage_taint.key }}={{ storage_taint.value }}:{{ storage_taint.effect }}"
-  with_items: "{{ storage_nodes }}"
-  when: apply_storage_taint
-
 - name: Install rook repository
   command: helm repo add rook https://charts.rook.io/master
 
@@ -27,7 +18,7 @@
   register: rook_values_file
 
 - name: Copy Helm values to tempfile
-  template:
+  copy:
     src: helm-values.yaml
     dest: "{{ rook_values_file.path }}"
 
@@ -68,7 +59,7 @@
   register: rook_manifests_dir
 
 - name: Copy cluster manifests
-  template:
+  copy:
     src: "{{ item }}"
     dest: "{{ rook_manifests_dir.path }}/{{ item }}"
   with_items:

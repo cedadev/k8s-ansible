@@ -77,15 +77,14 @@ spec:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-                - key: "{{ storage_label.key }}"
+                - key: role
                   operator: In
-                  values:
-                    - "{{ storage_label.value }}"
+                  values: [infrastructure]
       tolerations:
-        - key: "{{ storage_taint.key }}"
+        - key: role
           operator: Equal
-          value: "{{ storage_taint.value }}"
-          effect: "{{ storage_taint.effect }}"
+          value: infrastructure
+          effect: NoSchedule
   resources:
 # The requests and limits set here, allow the mgr pod to use half of one CPU core and 1 gigabyte of memory
 #    mgr:
