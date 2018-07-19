@@ -1,0 +1,18 @@
+# Label to use for storage nodes
+storage_label: &storage_label
+  key: infrastructure
+  value: storage
+
+# Taint to use for storage nodes
+storage_taint:
+  <<: *storage_label
+  effect: NoSchedule
+
+# By default, apply the taint (the label is always required)
+apply_storage_taint: true
+
+# By default, use the default interface for comms
+cluster_interface: "{{ ansible_default_ipv4.interface }}"
+
+# By default, use all the nodes in the infrastructure_nodes group as storage nodes
+storage_nodes: "{{ groups['infrastructure_nodes'] | map('extract', hostvars, ['ansible_' + cluster_interface, 'ipv4', 'address']) | list }}"

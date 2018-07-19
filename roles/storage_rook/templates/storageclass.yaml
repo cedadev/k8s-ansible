@@ -1,8 +1,8 @@
-apiVersion: rook.io/v1alpha1
+apiVersion: ceph.rook.io/v1beta1
 kind: Pool
 metadata:
-  name: default-block-pool
-  namespace: rook-cluster
+  name: replica-pool
+  namespace: rook-ceph
 spec:
   replicated:
     size: 3
@@ -13,5 +13,5 @@ metadata:
    name: default-block
 provisioner: rook.io/block
 parameters:
-  pool: default-block-pool
-  clusterNamespace: rook-cluster
+  pool: replica-pool
+  clusterNamespace: rook-ceph

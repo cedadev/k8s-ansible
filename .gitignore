@@ -4,3 +4,4 @@
 venv
 .artifacts
 .python-version
+kubecluster.conf

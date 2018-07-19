@@ -3,27 +3,22 @@
 - name: Update Helm repositories
   command: helm repo update
 
-# Deploy the ingress controller to the master node, using the host network
-# This means that we can expose the cluster just by exposing the master node
-# Make sure to use the RollingUpdate update strategy
-# Set minAvailable to 0 for the controller and the default backend as not
-# doing so would prevent us from draining the master for maintenance
-- name: Install Nginx ingress controller using Helm
+- name: Create tempfile for Helm values
+  tempfile:
+    state: file
+  register: ingress_values_file
+
+- name: Copy Helm values to tempfile
+  copy:
+    src: files/helm-values.yaml
+    dest: "{{ ingress_values_file.path }}"
+
+- name: Install/upgrade Nginx ingress controller
   command: >
     helm upgrade nginx-ingress stable/nginx-ingress
       --install
-      --namespace=nginx-ingress
-      --set rbac.create=true
-      --set serviceAccount.create=true
-      --set controller.updateStrategy.type=RollingUpdate
-      --set controller.hostNetwork=true
-      --set controller.service.type=ClusterIP
-      --set controller.tolerations[0].key=node-role.kubernetes.io/master
-      --set controller.tolerations[0].operator=Exists
-      --set controller.tolerations[0].effect=NoSchedule
-      --set controller.nodeSelector."node-role\.kubernetes\.io/master"=""
-      --set controller.minAvailable=0
-      --set defaultBackend.minAvailable=0
+      --namespace nginx-ingress
+      --values {{ ingress_values_file.path }}
 
 - name: Ensure Nginx ingress controller has started
   command: kubectl -n nginx-ingress rollout status deployment nginx-ingress-controller

@@ -1,5 +1,5 @@
 # The default Kubernetes version
-kubernetes_version: "1.10"
+kubernetes_version: "1.11"
 
 # By default, use the iptables proxy
 userspace_proxy: false

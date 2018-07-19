@@ -24,7 +24,9 @@
   remote_user: root
   tasks:
     - name: Get kubeadm token
-      shell: set -o pipefail ; kubeadm token list | tail -n 1 | awk '{ print $1 };'
+      shell: >
+        set -o pipefail ;
+        kubeadm token list | head -n 2 | tail -n 1 | awk '{ print $1 };'
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
       register: kubeadm_token_cmd
@@ -45,7 +47,7 @@
     KUBECONFIG: /etc/kubernetes/kubelet.conf
 
 # Required for Rook because CentOS 7 has a vn3 kernel
-- hosts: all
+- hosts: infrastructure_nodes
   remote_user: root
   tasks:
     - include_role:

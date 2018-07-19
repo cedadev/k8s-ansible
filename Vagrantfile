@@ -52,13 +52,16 @@ Vagrant.configure(2) do |config|
           ansible.groups = {
             "kube_masters"  => ["kube-master"],
             "kube_minions" => (1..N_MINIONS).map { |n| "kube-minion%d" % n },
+            # All the minions are infrastructure nodes in this setup
+            "infrastructure_nodes:children" => ["kube_minions"],
           }
           ansible.extra_vars = {
             "cluster_interface" => "eth1",
             "userspace_proxy" => true,
-            # All the minions are storage nodes
-            # Remember that Kubernetes knows them by their IP
-            "storage_nodes" => (1..N_MINIONS).map { |n| "172.28.128.%s" % (100 + n) }
+            # Because all the minions are infrastructure nodes, we don't apply the taints
+            # otherwise there is nowhere for real workloads to go
+#            "apply_storage_taint" => false
+            "kubernetes_version" => "1.11.0"
           }
         end
       end

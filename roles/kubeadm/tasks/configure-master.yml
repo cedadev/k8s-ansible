@@ -15,6 +15,7 @@
 - name: Initialise Kubernetes master
   command: >
     kubeadm init
+      --kubernetes-version={{ kubernetes_version_target }}
       --token={{ kubeadm_token }}
       --token-ttl=0
       --apiserver-advertise-address={{ host_ip }}
@@ -32,5 +33,5 @@
 - name: Install pod network
   shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 
-- name: Ensure kube-dns has started
-  command: kubectl -n kube-system rollout status deployment kube-dns
+- name: Ensure DNS service has started
+  command: kubectl -n kube-system rollout status deployment coredns

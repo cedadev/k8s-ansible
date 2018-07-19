@@ -1,5 +1,14 @@
 ---
 
+- name: Set storage label on storage nodes (attract storage pods to nodes)
+  command: kubectl label --overwrite nodes {{ item }} "{{ storage_label.key }}={{ storage_label.value }}"
+  with_items: "{{ storage_nodes }}"
+
+- name: Set storage infrastructure taint (repel other pods from nodes)
+  command: kubectl taint --overwrite nodes {{ item }} "{{ storage_taint.key }}={{ storage_taint.value }}:{{ storage_taint.effect }}"
+  with_items: "{{ storage_nodes }}"
+  when: apply_storage_taint
+
 - name: Install rook repository
   command: helm repo add rook https://charts.rook.io/master
 
@@ -9,67 +18,80 @@
 - name: Get rook version
   shell: >
     set -o pipefail ; 
-    helm search rook | grep "rook/rook[^-]" | head -n 1 | awk '{ print $2; }'
+    helm search rook-ceph | tail -n 1 | awk '{ print $2; }'
   register: rook_version
 
-- name: Install rook operator
+- name: Create tempfile for Helm values
+  tempfile:
+    state: file
+  register: rook_values_file
+
+- name: Copy Helm values to tempfile
+  template:
+    src: helm-values.yaml
+    dest: "{{ rook_values_file.path }}"
+
+- name: Install/upgrade rook operator
   command: >
-    helm upgrade rook-operator rook/rook --install
+    helm upgrade rook-ceph-operator rook/rook-ceph
+      --install
       --version {{ rook_version.stdout }}
-      --namespace rook
+      --namespace rook-system
+      --values {{ rook_values_file.path }}
 
 - name: Ensure rook operator has started
-  command: kubectl -n rook rollout status deployment rook-operator
+  command: kubectl -n rook-system rollout status deployment rook-ceph-operator
 
-- name: Label storage nodes
-  command: kubectl label nodes {{ item }} storage-node=rook
-  with_items: "{{ storage_nodes }}"
+- name: Wait for rook agent daemonset to exist
+  command: kubectl -n rook-system get daemonset rook-ceph-agent
+  register: rook_agent_exists
+  until: rook_agent_exists is succeeded
+  retries: 60
+  delay: 5
+
+- name: Ensure rook agents have started
+  command: kubectl -n rook-system rollout status daemonset rook-ceph-agent
+
+- name: Wait for rook discover daemonset to exist
+  command: kubectl -n rook-system get daemonset rook-discover
+  register: rook_discover_exists
+  until: rook_discover_exists is succeeded
+  retries: 60
+  delay: 5
+
+- name: Ensure rook discover has started
+  command: kubectl -n rook-system rollout status daemonset rook-discover
 
 - name: Make manifests directory
-  file:
+  tempfile:
     state: directory
-    path: /root/manifests/rook-cluster
+  register: rook_manifests_dir
 
 - name: Copy cluster manifests
-  copy:
-    src: files/{{ item }}
-    dest: /root/manifests/rook-cluster/{{ item }}
+  template:
+    src: "{{ item }}"
+    dest: "{{ rook_manifests_dir.path }}/{{ item }}"
   with_items:
-    - namespace.yaml
     - cluster.yaml
     - storageclass.yaml
 
-- name: Create cluster namespace
-  command: kubectl apply -f /root/manifests/rook-cluster/namespace.yaml
-
 - name: Create cluster resource
-  command: kubectl apply -f /root/manifests/rook-cluster/cluster.yaml
+  command: kubectl apply -f {{ rook_manifests_dir.path }}/cluster.yaml
 
-##
-## The cluster resource always seems to start the monitors first, then the manager, then the OSDs
-## 
-## So we wait for the OSD daemonset to exist and rollout, then sanity check the monitors and manager
-##
-
-- name: Wait for Ceph OSD daemonset to exist
-  shell: kubectl -n rook-cluster get daemonset -l app=rook-ceph-osd -o json | jq -e '.items|length > 0'
-  register: ceph_osd_exists
-  until: ceph_osd_exists is succeeded
-  retries: 60
-  delay: 5
-
-- name: Ensure Ceph OSDs have started
-  command: kubectl -n rook-cluster rollout status daemonset rook-ceph-osd
-
-- name: Ensure Ceph monitors have started
-  shell: kubectl -n rook-cluster get replicaset -l app=rook-ceph-mon -o json | jq -e '.items|map(.status.availableReplicas == .spec.replicas)|all'
-  register: ceph_monitors
-  until: ceph_monitors is succeeded
-  retries: 60
-  delay: 5
-
-- name: Ensure Ceph manager has started
-  command: kubectl -n rook-cluster rollout status deployment rook-ceph-mgr0
+- name: Wait for cluster pods to become ready
+  shell: |
+    set -o pipefail
+    # Wait until there is at least one pod with the correct label
+    until kubectl -n rook-ceph get pod -l app={{ item }} -o json | jq -e '.items|length > 0'
+    do
+      sleep 1
+    done
+    # Then wait for them to go into the ready state
+    kubectl -n rook-ceph wait --for condition=ready pod -l app={{ item }} --timeout 300s
+  with_items:
+    - rook-ceph-mgr
+    - rook-ceph-mon
+    - rook-ceph-osd
 
 - name: Install default-block storage class
-  command: kubectl apply -f /root/manifests/rook-cluster/storageclass.yaml
+  command: kubectl apply -f {{ rook_manifests_dir.path }}/storageclass.yaml
