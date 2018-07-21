@@ -1,6 +1,6 @@
 ---
 
-- name: Install rook repository
+- name: Install Rook Helm repository
   command: helm repo add rook https://charts.rook.io/master
 
 - name: Update Helm repositories
@@ -33,25 +33,25 @@
 - name: Ensure rook operator has started
   command: kubectl -n rook-system rollout status deployment rook-ceph-operator
 
-- name: Wait for rook agent daemonset to exist
-  command: kubectl -n rook-system get daemonset rook-ceph-agent
-  register: rook_agent_exists
-  until: rook_agent_exists is succeeded
-  retries: 60
-  delay: 5
-
 - name: Ensure rook agents have started
-  command: kubectl -n rook-system rollout status daemonset rook-ceph-agent
-
-- name: Wait for rook discover daemonset to exist
-  command: kubectl -n rook-system get daemonset rook-discover
-  register: rook_discover_exists
-  until: rook_discover_exists is succeeded
-  retries: 60
-  delay: 5
+  shell: |
+    # Loop until the daemonset exists
+    until kubectl -n rook-system get daemonset rook-ceph-agent
+    do
+      sleep 1
+    done
+    # Then wait for the daemonset to roll out
+    kubectl -n rook-system rollout status daemonset rook-ceph-agent
 
 - name: Ensure rook discover has started
-  command: kubectl -n rook-system rollout status daemonset rook-discover
+  shell: |
+    # Loop until the daemonset exists
+    until kubectl -n rook-system get daemonset rook-discover
+    do
+      sleep 1
+    done
+    # Then wait for the daemonset to roll out
+    kubectl -n rook-system rollout status daemonset rook-discover
 
 - name: Make manifests directory
   tempfile:
@@ -78,7 +78,7 @@
       sleep 1
     done
     # Then wait for them to go into the ready state
-    kubectl -n rook-ceph wait --for condition=ready pod -l app={{ item }} --timeout 300s
+    kubectl -n rook-ceph wait --for condition=ready pod -l app={{ item }} --timeout -1s
   with_items:
     - rook-ceph-mgr
     - rook-ceph-mon
