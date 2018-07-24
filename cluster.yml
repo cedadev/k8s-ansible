@@ -1,72 +1,12 @@
 ---
 
-# The kubeadm role is designed to be run independently for each node
-# without relying on any groups being set, and could even be run on
-# the node itself using a local connection.
-#
-# The only requirement is that it runs on the master before it runs
-# on the nodes, however it does require that the kube_master_ip and
-# kubeadm_token are passed to the minions by some mechanism.
-#
-# In this full-cluster playbook, we use an intermediate play to
-# just set the two facts based on the master group.
-
-- hosts: kube_masters
-  remote_user: root
+- hosts: kube_hosts
   roles:
     - kubeadm
-  vars:
-    kube_role: master
-  environment:
-    KUBECONFIG: /etc/kubernetes/admin.conf
-
-- hosts: all
-  remote_user: root
-  tasks:
-    - name: Get kubeadm token
-      shell: >
-        set -o pipefail ;
-        kubeadm token list | head -n 2 | tail -n 1 | awk '{ print $1 };'
-      environment:
-        KUBECONFIG: /etc/kubernetes/admin.conf
-      register: kubeadm_token_cmd
-      delegate_to: "{{ groups['kube_masters'][0] }}"
-
-    - name: Set required facts
-      set_fact:
-        kube_master_ip: "{{ hostvars[groups['kube_masters'][0]]['ansible_' + cluster_interface].ipv4.address }}"
-        kubeadm_token: "{{ kubeadm_token_cmd.stdout }}"
-
-- hosts: kube_minions
-  remote_user: root
-  roles:
-    - kubeadm
-  vars:
-    kube_role: minion
-  environment:
-    KUBECONFIG: /etc/kubernetes/kubelet.conf
-
-- hosts: infrastructure_nodes
-  remote_user: root
-  tasks:
-    # Required for Rook because CentOS 7 has a vn3 kernel
-    - include_role:
-        name: storage_rook
-        tasks_from: kernel_module
-    # Label the nodes so the infrastructure components can run
-    - command: kubectl label --overwrite node {{ host_ip }} "role=infrastructure"
-      vars:
-        cluster_interface: "{{ cluster_interface | default(ansible_default_ipv4.interface) }}"
-        host_ip: "{{ hostvars[inventory_hostname]['ansible_' + cluster_interface].ipv4.address }}"
-  environment:
-    KUBECONFIG: /etc/kubernetes/kubelet.conf
-
-- hosts: kube_masters
-  remote_user: root
-  roles:
-    - helm
-    - ingress_nginx
+    - role: helm
+      when: inventory_hostname in groups['kube_masters']
+    - role: ingress_nginx
+      when: inventory_hostname in groups['kube_masters']
     - storage_rook
-    - kubernetes_dashboard
-  environment:
-    KUBECONFIG: /etc/kubernetes/admin.conf
+    - role: kubernetes_dashboard
+      when: inventory_hostname in groups['kube_masters']

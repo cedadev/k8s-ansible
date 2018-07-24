@@ -7,13 +7,16 @@ userspace_proxy: false
 # By default, use the default interface for cluster communication
 cluster_interface: "{{ ansible_default_ipv4.interface }}"
 
-# Find the IPv4 info from hostvars for the cluster_interface
+# Find the IPv4 info for the current inventory host from hostvars for the cluster_interface
 cluster_iface_ipv4: "{{ hostvars[inventory_hostname]['ansible_' + cluster_interface].ipv4 }}"
 
-# This is the IPv4 address of the node
-# If not given, use the IPv4 address of the cluster_interface
+# This is the IPv4 address of the current inventory host
+# By default, use the IPv4 address of the cluster_interface
 host_ip: "{{ cluster_iface_ipv4.address }}"
 
 # This is the CIDR of the cluster network
-# If not given, use the network and netmask of the cluster_interface
+# By default, use the network and netmask of the cluster_interface
 cluster_cidr: "{{ [cluster_iface_ipv4.network, cluster_iface_ipv4.netmask] | join('/') | ipaddr('net') }}"
+
+# This is the IPv4 address of the master node on the specified cluster interface
+kube_master_ip: "{{ hostvars[groups['kube_masters'][0]]['ansible_' + cluster_interface].ipv4.address }}"

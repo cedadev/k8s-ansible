@@ -77,13 +77,12 @@ spec:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-                - key: role
+                - key: storage
                   operator: In
-                  values: [infrastructure]
+                  values: [rook]
       tolerations:
-        - key: role
-          operator: Equal
-          value: infrastructure
+        - key: storage
+          operator: Exists
           effect: NoSchedule
   resources:
 # The requests and limits set here, allow the mgr pod to use half of one CPU core and 1 gigabyte of memory

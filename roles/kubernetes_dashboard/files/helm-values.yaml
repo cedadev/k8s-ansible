@@ -6,12 +6,3 @@ ingress:
 rbac:
   create: true
   clusterAdminRole: true
-
-nodeSelector:
-  role: infrastructure
-
-tolerations:
-  - key: role
-    operator: Equal
-    value: infrastructure
-    effect: NoSchedule

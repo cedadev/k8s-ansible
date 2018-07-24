@@ -34,8 +34,13 @@
     state: started
     enabled: yes
 
-- name: Configure node
-  include_tasks: "configure-{{ kube_role }}.yml"
+- name: Configure master
+  include_tasks: "configure-master.yml"
+  when: inventory_hostname in groups['kube_masters']
+
+- name: Configure minions
+  include_tasks: "configure-minion.yml"
+  when: inventory_hostname in groups['kube_minions']
 
 - name: Set installed Kubernetes version fact
   set_fact:

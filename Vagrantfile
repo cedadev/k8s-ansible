@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-N_MINIONS = 4
+N_MINIONS = 2
 
 Vagrant.configure(2) do |config|
   config.vm.box = "centos/7"
@@ -43,25 +43,44 @@ Vagrant.configure(2) do |config|
       node.vm.hostname = host_name
       node.vm.network :private_network, ip: "172.28.128.%s" % (100 + n)
 
+      # Add an additional disk to each minion to trigger it as a storage node
+      # This disk will be used to store Ceph volumes
+      disk_path = './.vagrant/disks/%s.vdi' % host_name
+      node.vm.provider :virtualbox do |vb|
+        unless File.exists?(disk_path)
+          vb.customize [
+            'createhd',
+            '--filename', disk_path,
+            '--size', 50 * 1024
+          ]
+        end
+        vb.customize [
+          'storageattach',
+          :id,
+          '--storagectl', 'IDE',
+          '--port', 1,
+          '--device', 0,
+          '--type', 'hdd',
+          '--medium', disk_path
+        ]
+      end
+
       if n == N_MINIONS
         node.vm.provision :ansible do |ansible|
           ansible.playbook = "cluster.yml"
           # ansible.verbose = "vvvv"
           ansible.limit = "all"
-          ansible.force_remote_user = false
+          ansible.force_remote_user = true
+          ansible.become = true
           ansible.groups = {
             "kube_masters"  => ["kube-master"],
             "kube_minions" => (1..N_MINIONS).map { |n| "kube-minion%d" % n },
-            # All the minions are infrastructure nodes in this setup
-            "infrastructure_nodes:children" => ["kube_minions"],
+            "kube_hosts:children" => ["kube_masters", "kube_minions"],
           }
           ansible.extra_vars = {
             "cluster_interface" => "eth1",
             "userspace_proxy" => true,
-            # Because all the minions are infrastructure nodes, we don't apply the taints
-            # otherwise there is nowhere for real workloads to go
-#            "apply_storage_taint" => false
-            "kubernetes_version" => "1.11.0"
+            "rook_version" => "v0.8.0-4.gfb2c208",
           }
         end
       end

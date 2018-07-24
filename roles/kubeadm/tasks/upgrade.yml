@@ -1,6 +1,14 @@
 ---
 
-- include_tasks: "upgrade-{{ kube_role }}.yml"
+- name: Upgrade master node
+  include_tasks: "upgrade-master.yml"
+  when: inventory_hostname in groups['kube_masters']
+
+# This trick with when and with_items should ensure that the minions are upgraded one at a time
+- name: Upgrade minion node
+  include_tasks: "upgrade-minion.yml"
+  when: inventory_hostname == item
+  with_items: "{{ groups['kube_minions'] }}"
 
 - name: Set installed Kubernetes version fact
   set_fact:

@@ -1,26 +1,26 @@
 ---
 
-- name: Generate new kubeadm token
-  command: kubeadm token generate
-  register: kubeadm_token_generate
-  when: kubeadm_token is not defined
-
-- name: Set kubeadm_token fact
-  set_fact:
-    kubeadm_token: "{{ kubeadm_token_generate.stdout }}"
-  when: kubeadm_token is not defined
-
 # Set the token TTL so that the token doesn't expire
 # Use the IP address as the node name
 - name: Initialise Kubernetes master
   command: >
     kubeadm init
       --kubernetes-version={{ kubernetes_version_target }}
-      --token={{ kubeadm_token }}
       --token-ttl=0
       --apiserver-advertise-address={{ host_ip }}
       --node-name={{ host_ip }}
       --ignore-preflight-errors=cri
+
+- name: Ensure /root/.kube exists
+  file:
+    state: directory
+    path: /root/.kube
+
+- name: Symlink kubectl admin config to default location
+  file:
+    state: link
+    path: /root/.kube/config
+    src: /etc/kubernetes/admin.conf
 
 - name: Update proxy-mode for kube-proxy
   shell: >

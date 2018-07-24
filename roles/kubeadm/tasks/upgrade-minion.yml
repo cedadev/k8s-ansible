@@ -1,18 +1,8 @@
 ---
 
-# Because of https://github.com/kubernetes/kubernetes/issues/51040, the best we can do
-# without requiring coordinated commands between master and minion is to remove the
-# minion from the cluster, upgrade the packages, reset and re-join it.
-#
-# This is not ideal because although Kubernetes will reschedule any pods running on
-# the minion, the process doesn't respect application SLOs defined using pod
-# disruption budgets.
-#
-# If a node could trigger a drain of itself, we would do the same as the master, i.e.
-# drain, upgrade packages then uncordon.
-
-- name: Remove node from cluster
-  command: kubectl delete node {{ host_ip }}
+- name: Drain node
+  command: kubectl drain {{ host_ip }} --ignore-daemonsets
+  delegate_to: "{{ groups['kube_masters'][0] }}"
 
 - name: Upgrade docker and kubernetes packages
   yum:
@@ -36,8 +26,6 @@
     - docker
     - kubelet
 
-- name: Reset kubeadm
-  command: kubeadm reset
-
-- name: Rejoin cluster
-  include_tasks: "configure-minion.yml"
+- name: Uncordon node
+  command: kubectl uncordon {{ host_ip }}
+  delegate_to: "{{ groups['kube_masters'][0] }}"

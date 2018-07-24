@@ -1,88 +1,14 @@
 ---
 
-- name: Install Rook Helm repository
-  command: helm repo add rook https://charts.rook.io/master
+# The rbd kernel module needs to be enabled on every node that might want to mount storage
+- name: Enable kernel module
+  include_tasks: "kernel_module.yml"
+  when: inventory_hostname in groups['kube_minions']
 
-- name: Update Helm repositories
-  command: helm repo update
+- name: Configure storage nodes
+  include_tasks: "configure_storage.yml"
+  when: inventory_hostname in groups['kube_minions']
 
-- name: Get rook version
-  shell: >
-    set -o pipefail ; 
-    helm search rook-ceph | tail -n 1 | awk '{ print $2; }'
-  register: rook_version
-
-- name: Create tempfile for Helm values
-  tempfile:
-    state: file
-  register: rook_values_file
-
-- name: Copy Helm values to tempfile
-  copy:
-    src: helm-values.yaml
-    dest: "{{ rook_values_file.path }}"
-
-- name: Install/upgrade rook operator
-  command: >
-    helm upgrade rook-ceph-operator rook/rook-ceph
-      --install
-      --version {{ rook_version.stdout }}
-      --namespace rook-system
-      --values {{ rook_values_file.path }}
-
-- name: Ensure rook operator has started
-  command: kubectl -n rook-system rollout status deployment rook-ceph-operator
-
-- name: Ensure rook agents have started
-  shell: |
-    # Loop until the daemonset exists
-    until kubectl -n rook-system get daemonset rook-ceph-agent
-    do
-      sleep 1
-    done
-    # Then wait for the daemonset to roll out
-    kubectl -n rook-system rollout status daemonset rook-ceph-agent
-
-- name: Ensure rook discover has started
-  shell: |
-    # Loop until the daemonset exists
-    until kubectl -n rook-system get daemonset rook-discover
-    do
-      sleep 1
-    done
-    # Then wait for the daemonset to roll out
-    kubectl -n rook-system rollout status daemonset rook-discover
-
-- name: Make manifests directory
-  tempfile:
-    state: directory
-  register: rook_manifests_dir
-
-- name: Copy cluster manifests
-  copy:
-    src: "{{ item }}"
-    dest: "{{ rook_manifests_dir.path }}/{{ item }}"
-  with_items:
-    - cluster.yaml
-    - storageclass.yaml
-
-- name: Create cluster resource
-  command: kubectl apply -f {{ rook_manifests_dir.path }}/cluster.yaml
-
-- name: Wait for cluster pods to become ready
-  shell: |
-    set -o pipefail
-    # Wait until there is at least one pod with the correct label
-    until kubectl -n rook-ceph get pod -l app={{ item }} -o json | jq -e '.items|length > 0'
-    do
-      sleep 1
-    done
-    # Then wait for them to go into the ready state
-    kubectl -n rook-ceph wait --for condition=ready pod -l app={{ item }} --timeout -1s
-  with_items:
-    - rook-ceph-mgr
-    - rook-ceph-mon
-    - rook-ceph-osd
-
-- name: Install default-block storage class
-  command: kubectl apply -f {{ rook_manifests_dir.path }}/storageclass.yaml
+- name: Install rook
+  include_tasks: "install_rook.yml"
+  when: inventory_hostname in groups['kube_masters']

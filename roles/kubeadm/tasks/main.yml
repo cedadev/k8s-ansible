@@ -29,7 +29,7 @@
     state: enabled
   with_items:
     - weave-net
-    - "kubernetes-{{ kube_role }}"
+    - "kubernetes-{% if inventory_hostname in groups['kube_masters'] %}master{% else %}minion{% endif %}"
 
 - name: Allow external access to API server
   firewalld:
@@ -37,7 +37,7 @@
     permanent: true
     immediate: true
     state: enabled
-  when: kube_role == "master"
+  when: inventory_hostname in groups['kube_masters']
 
 - name: Create sysctl settings file for bridge settings
   copy:

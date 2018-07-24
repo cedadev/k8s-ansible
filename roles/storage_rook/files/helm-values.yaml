@@ -1,16 +1,15 @@
 nodeSelector:
-  role: infrastructure
+  storage: rook
 
 tolerations:
-  - key: role
-    operator: Equal
-    value: infrastructure
+  - key: storage
+    operator: Exists
     effect: NoSchedule
 
 agent:
   toleration: NoSchedule
-  tolerationKey: role
+  tolerationKey: storage
 
 discover:
   toleration: NoSchedule
-  tolerationKey: role
+  tolerationKey: storage
