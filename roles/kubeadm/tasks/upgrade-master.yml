@@ -17,7 +17,7 @@
 - name: Upgrade pod network
   shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 
-- name: Drain pods from node
+- name: Drain pods from host
   command: kubectl drain {{ host_ip }} --ignore-daemonsets
 
 - name: Upgrade docker and kubelet
@@ -46,5 +46,5 @@
     port: 6443
     delay: 10
 
-- name: Uncordon node
+- name: Uncordon host
   command: kubectl uncordon {{ host_ip }}

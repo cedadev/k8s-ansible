@@ -20,7 +20,7 @@
     - "kubeadm-{{ kubernetes_version_target }}"
     - "kubectl-{{ kubernetes_version_target }}"
 
-# Make sure the kubelet uses the IP address as the hostname
+# Make sure the kubelet uses the IP address as the hostname
 - name: Update kubelet hostname-override
   copy:
     dest: /etc/systemd/system/kubelet.service.d/09-hostname-override.conf
@@ -34,13 +34,17 @@
     state: started
     enabled: yes
 
-- name: Configure master
-  include_tasks: "configure-master.yml"
-  when: inventory_hostname in groups['kube_masters']
+# Keeping the configuration steps separate allows this to be used as a
+# full-cluster playbook and a per-host playbook and ensure that the
+# master gets configured first
 
-- name: Configure minions
-  include_tasks: "configure-minion.yml"
-  when: inventory_hostname in groups['kube_minions']
+- name: Configure host as master
+  include_tasks: configure-master.yml
+  when: kube_role == "master"
+
+- name: Configure host as worker
+  include_tasks: configure-worker.yml
+  when: kube_role == "worker"
 
 - name: Set installed Kubernetes version fact
   set_fact:

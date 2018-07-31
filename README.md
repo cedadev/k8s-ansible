@@ -6,9 +6,7 @@ provision a [Kubernetes](https://kubernetes.io) cluster.
 It uses the [kubeadm tool](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/)
 to set up a secure cluster.
 
-Storage is provided by [Ceph](http://ceph.com/) deployed using [rook](https://rook.io/),
-with a default [StorageClass](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#storageclasses)
-for Kubernetes dynamically provisioned storage.
+The [Helm package manager](https://helm.sh/) is deployed into the cluster.
 
 The [Nginx ingress controller](https://github.com/kubernetes/ingress/tree/master/controllers/nginx)
 is also deployed to provide [Ingress resources](https://kubernetes.io/docs/concepts/services-networking/ingress/).
@@ -20,8 +18,11 @@ The test cluster is deployed using [Vagrant](https://www.vagrantup.com/) and
 [VirtualBox](https://www.virtualbox.org/), so make sure you have recent versions
 of both installed.
 
-By default the Kubernetes cluster consists of a master and 2 minions. The number
-of minions can be increased by changing `N_NODES` at the top of the `Vagrantfile`.
+Dynamic storage is provided by a [StorageClass](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#storageclasses)
+provided by [rook](https://rook.io/), a project to make deploying containerised [Ceph](http://ceph.com/) easy.
+
+By default the Kubernetes cluster consists of a master and 2 workers. The number
+of workers can be increased by changing `N_WORKERS` at the top of the `Vagrantfile`.
 
 To provision the test cluster, just run `vagrant up`.
 
@@ -32,14 +33,16 @@ $ vagrant ssh kube-master -- -l root
 [root@kube-master ~]# kubectl ...
 ```
 
-Alternatively, you can install `kubectl` on your host system, and use the config
-file that was pulled from the `kube-master` during the Ansible playbook:
+Alternatively, you can install `kubectl` on your host system. To do this, we need to pull
+the config file from the `kube-master`:
 
 ```
-$ export KUBECONFIG=$HERE/.artifacts/vagrant/kubernetes-admin.conf
+$ SSHCONFIG="$(mktemp)"
+$ vagrant ssh-config kube-master > $SSHCONFIG
+$ scp -F $SSHCONFIG root@kube-master:/etc/kubernetes/admin.conf /path/to/kubeconfig.conf
+$ export KUBECONFIG=/path/to/kubeconfig.conf
 $ kubectl ...
 ```
 
-This method is particularly useful for accessing the API server, and any dashboards
-you choose to install, using
-[kubectl proxy](https://kubernetes.io/docs/tasks/access-kubernetes-api/http-proxy-access-api/).
+This method is particularly useful for accessing the API server and any installed dashboards
+using [kubectl proxy](https://kubernetes.io/docs/tasks/access-kubernetes-api/http-proxy-access-api/).

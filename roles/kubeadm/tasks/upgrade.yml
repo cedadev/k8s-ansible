@@ -1,14 +1,21 @@
 ---
 
-- name: Upgrade master node
-  include_tasks: "upgrade-master.yml"
-  when: inventory_hostname in groups['kube_masters']
+# Keeping the upgrade steps separate allows this to be used as a
+# full-cluster playbook and a per-host playbook and ensure that
+# (1) the master gets upgraded first and (2) the workers are
+# upgraded one at a time
 
-# This trick with when and with_items should ensure that the minions are upgraded one at a time
-- name: Upgrade minion node
-  include_tasks: "upgrade-minion.yml"
-  when: inventory_hostname == item
-  with_items: "{{ groups['kube_minions'] }}"
+- name: Upgrade host as master
+  include_tasks: upgrade-master.yml
+  when: kube_role == "master"
+
+# Use with_items and a conditional check to upgrade one host at once
+- name: Upgrade host as worker
+  include_tasks: upgrade-worker.yml
+  when:
+    - kube_role == "worker"
+    - inventory_hostname == item
+  with_items: "{{ groups['all'] }}"
 
 - name: Set installed Kubernetes version fact
   set_fact:

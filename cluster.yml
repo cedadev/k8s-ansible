@@ -1,12 +1,6 @@
 ---
 
-- hosts: kube_hosts
+- hosts: all
+  remote_user: root
   roles:
     - kubeadm
-    - role: helm
-      when: inventory_hostname in groups['kube_masters']
-    - role: ingress_nginx
-      when: inventory_hostname in groups['kube_masters']
-    - storage_rook
-    - role: kubernetes_dashboard
-      when: inventory_hostname in groups['kube_masters']

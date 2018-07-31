@@ -13,7 +13,7 @@
   with_items:
     - kubernetes-api-server.xml
     - kubernetes-master.xml
-    - kubernetes-minion.xml
+    - kubernetes-worker.xml
     - weave-net.xml
   register: firewalld_services
 
@@ -29,7 +29,7 @@
     state: enabled
   with_items:
     - weave-net
-    - "kubernetes-{% if inventory_hostname in groups['kube_masters'] %}master{% else %}minion{% endif %}"
+    - "kubernetes-{{ kube_role }}"
 
 - name: Allow external access to API server
   firewalld:
@@ -37,7 +37,7 @@
     permanent: true
     immediate: true
     state: enabled
-  when: inventory_hostname in groups['kube_masters']
+  when: kube_role == "master"
 
 - name: Create sysctl settings file for bridge settings
   copy:
@@ -59,7 +59,7 @@
   lineinfile:
     path: /etc/fstab
     state: absent
-    # This should match all lines with an fstype of "swap"
+    # This should match all lines with an fstype of "swap"
     regexp: '^[^\s]+\s+[^\s]+\s+swap\s+'
   register: remove_swap_volumes
 
@@ -109,7 +109,7 @@
 - debug:
     msg: "Requested Kubernetes version: {{ kubernetes_version }}"
 
-# Get the currently installed version
+# Get the currently installed version
 - name: Find installed Kubernetes version
   shell: set -o pipefail ; yum list installed kubelet -q | tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
   changed_when: false
@@ -124,7 +124,7 @@
 - debug:
     msg: "Installed Kubernetes version: {{ kubernetes_version_installed|default('none') }}"
 
-# Find the latest available Kubernetes version that conforms to the requested version
+# Find the latest available Kubernetes version that conforms to the requested version
 - name: Find latest matching Kubernetes version
   shell: >
     set -o pipefail ;

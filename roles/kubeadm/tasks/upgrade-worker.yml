@@ -1,0 +1,44 @@
+---
+
+#####
+## We need to be able to upgrade the host without running commands on the master
+##
+## As part of the upgrade, the docker and kubelet services require a restart
+##
+## In an ideal world, this process would respect any pod disruption budgets by
+## draining and cordoning the host before upgrading packages and restarting
+## services
+##
+## Unfortunately, the Node Authorizer doesn't permit a host to drain itself, but
+## it does allow it to remove/delete itself, so we do that instead and rely on
+## the scheduler to move pods to a different host
+#####
+
+
+- name: Remove host from cluster
+  command: kubectl delete node {{ host_ip }}
+
+- name: Upgrade docker and kubernetes packages
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - docker
+    - kubelet-{{ kubernetes_version_target }}
+    - kubeadm-{{ kubernetes_version_target }}
+    - kubectl-{{ kubernetes_version_target }}
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Restart docker and kubelet
+  service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - docker
+    - kubelet
+
+- name: Rejoin cluster
+  include_tasks: configure-worker.yml
