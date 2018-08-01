@@ -38,3 +38,22 @@
 
 - name: Wait for node to become ready
   command: kubectl wait --for condition=ready --timeout -1s node {{ host_ip }}
+
+- name: Ensure DNS service has started
+  command: kubectl -n kube-system rollout status deployment coredns
+
+- name: Wait for control plane components to become ready
+  shell: |
+    set -eo pipefail
+    # Wait until there is at least one pod with the correct label
+    until kubectl -n kube-system get pod -l tier=control-plane,component={{ item }} -o json | jq -e '.items|length > 0'
+    do
+      sleep 1
+    done
+    # Then wait for them to go into the ready state
+    kubectl -n kube-system wait --for condition=ready pod -l tier=control-plane,component={{ item }} --timeout -1s
+  with_items:
+    - etcd
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
