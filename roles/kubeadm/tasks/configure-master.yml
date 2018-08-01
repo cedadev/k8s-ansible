@@ -24,14 +24,25 @@
 
 - name: Update proxy-mode for kube-proxy
   shell: >
+    set -o pipefail &&
     kubectl -n kube-system get ds -l k8s-app=kube-proxy -o json |
       jq '.items[0].spec.template.spec.containers[0].command |= .+ ["--proxy-mode=userspace"]' |
       kubectl apply -f - &&
     kubectl -n kube-system delete pods -l k8s-app=kube-proxy
   when: userspace_proxy
 
+- shell: |
+    echo $SHELL
+    echo $HOME
+    whoami
+  register: test
+- debug: var=test.stdout
+- fail:
+
 - name: Install pod network
-  shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+  shell: >
+    set -o pipefail &&
+    kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 
 - name: Ensure DNS service has started
   command: kubectl -n kube-system rollout status deployment coredns
