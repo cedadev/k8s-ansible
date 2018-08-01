@@ -44,11 +44,11 @@
     state: directory
     path: /root/.kube
 
-- name: Symlink kubectl kubelet config to default location
-  file:
-    state: link
-    path: /root/.kube/config
+- name: Copy kubectl kubelet config to default location
+  copy:
+    remote_src: yes
     src: /etc/kubernetes/kubelet.conf
+    path: /root/.kube/config
 
 - name: Wait for node to become ready
   shell: kubectl wait --for condition=ready --timeout -1s node {{ host_ip }}

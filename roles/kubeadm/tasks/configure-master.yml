@@ -16,11 +16,11 @@
     state: directory
     path: /root/.kube
 
-- name: Symlink kubectl admin config to default location
-  file:
-    state: link
-    path: /root/.kube/config
+- name: Copy kubectl admin config to default location
+  copy:
+    remote_src: yes
     src: /etc/kubernetes/admin.conf
+    path: /root/.kube/config
 
 - name: Update proxy-mode for kube-proxy
   shell: >
