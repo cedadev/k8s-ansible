@@ -38,3 +38,9 @@
 
 - name: Ensure DNS service has started
   command: kubectl -n kube-system rollout status deployment coredns
+
+- name: Wait for API server to become available
+  wait_for:
+    state: started
+    port: 6443
+    delay: 10
