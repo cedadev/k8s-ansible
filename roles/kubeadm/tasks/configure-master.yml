@@ -31,14 +31,6 @@
     kubectl -n kube-system delete pods -l k8s-app=kube-proxy
   when: userspace_proxy
 
-- shell: |
-    echo $SHELL
-    echo $HOME
-    whoami
-  register: test
-- debug: var=test.stdout
-- fail:
-
 - name: Install pod network
   shell: >
     set -o pipefail &&

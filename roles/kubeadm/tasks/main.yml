@@ -111,7 +111,9 @@
 
 # Get the currently installed version
 - name: Find installed Kubernetes version
-  shell: set -o pipefail ; yum list installed kubelet -q | tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
+  shell: >
+    set -o pipefail &&
+    yum list installed kubelet -q | tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
   changed_when: false
   failed_when: false
   register: kubelet_installed
@@ -127,7 +129,7 @@
 # Find the latest available Kubernetes version that conforms to the requested version
 - name: Find latest matching Kubernetes version
   shell: >
-    set -o pipefail ;
+    set -o pipefail &&
     yum list available kubelet{% if kubernetes_version is defined %}-{{ kubernetes_version }}{% endif %}* --showduplicates -q |
       tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
   changed_when: false
