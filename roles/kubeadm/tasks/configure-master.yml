@@ -20,7 +20,7 @@
   copy:
     remote_src: yes
     src: /etc/kubernetes/admin.conf
-    path: /root/.kube/config
+    dest: /root/.kube/config
 
 - name: Update proxy-mode for kube-proxy
   shell: >

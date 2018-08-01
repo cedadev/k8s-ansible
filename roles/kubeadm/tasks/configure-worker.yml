@@ -48,7 +48,7 @@
   copy:
     remote_src: yes
     src: /etc/kubernetes/kubelet.conf
-    path: /root/.kube/config
+    dest: /root/.kube/config
 
 - name: Wait for node to become ready
   shell: kubectl wait --for condition=ready --timeout -1s node {{ host_ip }}
