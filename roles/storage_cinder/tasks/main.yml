@@ -50,10 +50,10 @@
   delay: 5
 
 - name: Configure kubelet for Openstack
-  lineinfile:
-    path: /etc/sysconfig/kubelet
-    line: KUBELET_EXTRA_ARGS="$KUBELET_EXTRA_ARGS --cloud-provider=openstack --cloud-config=/etc/kubernetes/cloud.conf"
-    state: present
+  copy:
+    dest: /etc/sysconfig/kubelet
+    content: |
+      KUBELET_EXTRA_ARGS="--cloud-provider=openstack --cloud-config=/etc/kubernetes/cloud.conf"
 
 - name: Reload systemctl daemon
   systemd:

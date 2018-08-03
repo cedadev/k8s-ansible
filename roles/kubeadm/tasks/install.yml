@@ -20,13 +20,6 @@
     - "kubeadm-{{ kubernetes_version_target }}"
     - "kubectl-{{ kubernetes_version_target }}"
 
-# Make sure the kubelet uses the IP address as the hostname
-- name: Update kubelet hostname-override
-  lineinfile:
-    path: /etc/sysconfig/kubelet
-    line: KUBELET_EXTRA_ARGS="$KUBELET_EXTRA_ARGS --hostname-override={{ host_ip }}"
-    state: present
-
 - name: Ensure kubelet is started
   service:
     name: kubelet
