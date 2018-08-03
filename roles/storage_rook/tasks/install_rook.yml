@@ -69,7 +69,7 @@
 
 - name: Wait for cluster pods to become ready
   shell: |
-    set -o pipefail
+    set -euxo pipefail
     # Wait until there is at least one pod with the correct label
     until kubectl -n rook-ceph get pod -l app={{ item }} -o json | jq -e '.items|length > 0'
     do

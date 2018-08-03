@@ -43,7 +43,7 @@
     # Wait for the pod to mount the cloud config
     kubectl -n kube-system describe pod {{ item }} | grep '/etc/kubernetes/cloud.conf'
     # Then wait for the pod to go into the ready state
-    kubectl -n kube-system wait --for condition=ready --timeout -1s pod {{ item }}
+    kubectl -n kube-system wait --for condition=ready pod -l tier=control-plane,component={{ item }} --timeout -1s
   with_items:
     - kube-controller-manager
     - kube-apiserver

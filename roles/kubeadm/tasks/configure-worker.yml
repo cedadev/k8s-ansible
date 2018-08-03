@@ -7,8 +7,8 @@
 # as variables
 
 - name: Fetch kubeadm token from master
-  shell: >
-    set -o pipefail &&
+  shell: |
+    set -euxo pipefail
     kubeadm token list | head -n 2 | tail -n 1 | awk '{ print $1 };'
   register: kubeadm_token_cmd
   delegate_to: "{{ groups['kube_masters'][0] }}"
