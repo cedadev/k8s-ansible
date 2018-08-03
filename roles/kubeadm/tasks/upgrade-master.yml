@@ -15,12 +15,12 @@
   command: kubeadm upgrade apply -y v{{ kubernetes_version_target }}
 
 - name: Upgrade pod network
-  shell: >
-    set -o pipefail &&
+  shell: |
+    set -euxo pipefail
     kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 
 - name: Drain pods from host
-  command: kubectl drain {{ host_ip }} --ignore-daemonsets
+  command: kubectl drain {{ ansible_hostname }} --ignore-daemonsets
 
 - name: Upgrade docker and kubelet
   yum:
@@ -49,4 +49,4 @@
     delay: 10
 
 - name: Uncordon host
-  command: kubectl uncordon {{ host_ip }}
+  command: kubectl uncordon {{ ansible_hostname }}

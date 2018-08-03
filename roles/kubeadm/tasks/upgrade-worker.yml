@@ -16,7 +16,7 @@
 
 
 - name: Remove host from cluster
-  command: kubectl delete node {{ host_ip }}
+  command: kubectl delete node {{ ansible_hostname }}
 
 - name: Upgrade docker and kubernetes packages
   yum:

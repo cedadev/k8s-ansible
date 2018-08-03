@@ -35,7 +35,6 @@
     kubeadm join
       --token={{ kubeadm_token }}
       --ignore-preflight-errors=cri
-      --node-name={{ host_ip }}
       --discovery-token-unsafe-skip-ca-verification
       {{ kube_master_ip }}:6443
 
@@ -51,4 +50,4 @@
     dest: /root/.kube/config
 
 - name: Wait for node to become ready
-  command: kubectl wait --for condition=ready --timeout -1s node {{ host_ip }}
+  command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_hostname }}
