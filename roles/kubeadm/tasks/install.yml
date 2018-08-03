@@ -20,11 +20,11 @@
     - "kubeadm-{{ kubernetes_version_target }}"
     - "kubectl-{{ kubernetes_version_target }}"
 
-- name: Configure kubelet to host IP on correct interface
+- name: Override kubelet arguments
   copy:
     dest: /etc/sysconfig/kubelet
     content: |
-      KUBELET_EXTRA_ARGS="--node-ip={{ host_ip }}"
+      KUBELET_EXTRA_ARGS="--node-ip={{ host_ip }} --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice"
 
 - name: Ensure kubelet is started
   service:

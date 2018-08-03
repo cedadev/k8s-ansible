@@ -40,7 +40,10 @@
 - name: Wait for control plane components to restart with Openstack config
   shell: |
     set -euxo pipefail
+    # Wait for the pod to mount the cloud config
     kubectl -n kube-system describe pod {{ item }} | grep '/etc/kubernetes/cloud.conf'
+    # Then wait for the pod to go into the ready state
+    kubectl -n kube-system wait --for condition=ready --timeout -1s pod {{ item }}
   with_items:
     - kube-controller-manager
     - kube-apiserver
@@ -50,10 +53,11 @@
   delay: 5
 
 - name: Configure kubelet for Openstack
-  copy:
-    dest: /etc/sysconfig/kubelet
-    content: |
-      KUBELET_EXTRA_ARGS="--cloud-provider=openstack --cloud-config=/etc/kubernetes/cloud.conf"
+  lineinfile:
+    path: /etc/sysconfig/kubelet
+    regexp: ^KUBELET_EXTRA_ARGS="(.+)"$
+    line: KUBELET_EXTRA_ARGS="\1 --cloud-provider=openstack --cloud-config=/etc/kubernetes/cloud.conf"
+    backrefs: yes
 
 - name: Reload systemctl daemon
   systemd:
