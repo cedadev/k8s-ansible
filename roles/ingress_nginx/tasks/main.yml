@@ -3,22 +3,22 @@
 - name: Update Helm repositories
   command: helm repo update
 
-- name: Create tempfile for Helm values
-  tempfile:
-    state: file
-  register: ingress_values_file
+- name: Ensure helm values directory exists
+  file:
+    path: /root/helm/ingress_nginx
+    state: directory
 
-- name: Copy Helm values to tempfile
+- name: Copy Helm values to host
   copy:
     src: files/helm-values.yaml
-    dest: "{{ ingress_values_file.path }}"
+    dest: /root/helm/ingress_nginx/values.yaml
 
 - name: Install/upgrade Nginx ingress controller
   command: >
     helm upgrade nginx-ingress stable/nginx-ingress
       --install
       --namespace nginx-ingress
-      --values {{ ingress_values_file.path }}
+      --values /root/helm/ingress_nginx/values.yaml
 
 - name: Ensure Nginx ingress controller has started
   command: kubectl -n nginx-ingress rollout status deployment nginx-ingress-controller

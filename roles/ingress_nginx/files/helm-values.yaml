@@ -4,12 +4,12 @@ rbac:
 serviceAccount:
   create: true
 
-# Deploy the ingress controller to the master node, using the host network
-#   This is achieved by using a nodeSelector and toleration of the node-role/master taint
+# Deploy the ingress controller to the master node, using the host network
+#   This is achieved by using a nodeSelector and toleration of the node-role/master taint
 # This means that we can expose the cluster just by exposing the master node
 # Make sure to use the RollingUpdate update strategy
-# Set minAvailable to 0 for the controller and the default backend as not
-# doing so would prevent us from draining the master for maintenance
+# Set minAvailable to 0 for the controller and the default backend as not
+# doing so would prevent us from draining the master for maintenance
 controller:
   updateStrategy:
     type: RollingUpdate

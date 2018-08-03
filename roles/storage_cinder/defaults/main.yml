@@ -1,0 +1,5 @@
+# This is the Keystone auth URL for JASMIN's Openstack installation
+openstack_auth_url: https://kataifi.sweet.jasmin.ac.uk/v3/
+
+# By default, make the Cinder storage class the default storage class
+cinder_storageclass_default: true

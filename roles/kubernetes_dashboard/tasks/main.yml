@@ -3,22 +3,22 @@
 - name: Update Helm repositories
   command: helm repo update
 
-- name: Create tempfile for Helm values
-  tempfile:
-    state: file
-  register: dashboard_values_file
+- name: Ensure helm values directory exists
+  file:
+    path: /root/helm/kubernetes_dashboard
+    state: directory
 
-- name: Copy Helm values to tempfile
+- name: Copy helm values to host
   copy:
     src: files/helm-values.yaml
-    dest: "{{ dashboard_values_file.path }}"
+    dest: /root/helm/kubernetes_dashboard/values.yaml
 
 - name: Install/upgrade Kubernetes dashboard
   command: >
     helm upgrade kubernetes-dashboard stable/kubernetes-dashboard
       --install
       --namespace kube-system
-      --values {{ dashboard_values_file.path }}
+      --values /root/helm/kubernetes_dashboard/values.yaml
 
 - name: Ensure Kubernetes dashboard has started
   command: kubectl -n kube-system rollout status deployment kubernetes-dashboard

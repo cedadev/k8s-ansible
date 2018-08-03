@@ -1,0 +1,12 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard
+  {% if cinder_storageclass_default %}
+  annotations:
+    "storageclass.kubernetes.io/is-default-class": "true"
+  {% endif %}
+  labels:
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: EnsureExists
+provisioner: kubernetes.io/cinder

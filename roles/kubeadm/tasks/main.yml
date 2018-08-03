@@ -83,7 +83,7 @@
   args:
     warn: no
 
-- name: Install Yum versionlock plugin
+- name: Install yum versionlock plugin
   yum:
     name: yum-plugin-versionlock
     state: latest
@@ -130,7 +130,7 @@
 - name: Find latest matching Kubernetes version
   shell: >
     set -o pipefail &&
-    yum list available kubelet{% if kubernetes_version is defined %}-{{ kubernetes_version }}{% endif %}* --showduplicates -q |
+    yum list available kubelet-{{ kubernetes_version }}* --showduplicates -q |
       tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
   changed_when: false
   register: kubelet_available

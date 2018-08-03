@@ -12,7 +12,7 @@ kind: StorageClass
 metadata:
   name: standard
   annotations:
-    # Make this the default storage class
+    # Make this the default storage class
     "storageclass.kubernetes.io/is-default-class": "true"
 provisioner: rook.io/block
 parameters:
