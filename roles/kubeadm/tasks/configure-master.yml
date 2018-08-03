@@ -8,6 +8,7 @@
       --kubernetes-version={{ kubernetes_version_target }}
       --token-ttl=0
       --apiserver-advertise-address={{ host_ip }}
+      --node-name={{ ansible_fqdn }}
       --ignore-preflight-errors=cri
 
 - name: Ensure /root/.kube exists
@@ -36,7 +37,7 @@
     kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 
 - name: Wait for node to become ready
-  command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_hostname }}
+  command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_fqdn }}
 
 - name: Ensure DNS service has started
   command: kubectl -n kube-system rollout status deployment coredns

@@ -20,7 +20,7 @@
     kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 
 - name: Drain pods from host
-  command: kubectl drain {{ ansible_hostname }} --ignore-daemonsets
+  command: kubectl drain {{ ansible_fqdn }} --ignore-daemonsets
 
 - name: Upgrade docker and kubelet
   yum:
@@ -49,4 +49,4 @@
     delay: 10
 
 - name: Uncordon host
-  command: kubectl uncordon {{ ansible_hostname }}
+  command: kubectl uncordon {{ ansible_fqdn }}
