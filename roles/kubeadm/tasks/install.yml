@@ -1,5 +1,7 @@
 ---
 
+- include_tasks: prerequisites.yml
+
 - name: Install Docker
   yum:
     name: docker
@@ -32,16 +34,80 @@
     state: started
     enabled: yes
 
-# Keeping the configuration steps separate allows this to be used as a
-# full-cluster playbook and a per-host playbook and ensure that the
-# master gets configured first
+# Configure the master first
+- name: Configure master
+  block:
+    # Set the token TTL so that the token doesn't expire
+    # Use the IP address as the node name
+    - name: Initialise Kubernetes master
+      command: >
+        kubeadm init
+          --kubernetes-version={{ kubernetes_version_target }}
+          --token-ttl=0
+          --apiserver-advertise-address={{ host_ip }}
+          --node-name={{ ansible_hostname }}
+          --ignore-preflight-errors=cri
 
-- name: Configure host as master
-  include_tasks: configure-master.yml
+    - name: Ensure /root/.kube exists
+      file:
+        state: directory
+        path: /root/.kube
+
+    - name: Copy kubectl admin config to default location
+      copy:
+        remote_src: yes
+        src: /etc/kubernetes/admin.conf
+        dest: /root/.kube/config
+
+    - name: Install pod network
+      shell: |
+        set -eo pipefail
+        kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+
+    - name: Wait for node to become ready
+      command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_hostname }}
+
+    - name: Ensure DNS service has started
+      command: kubectl -n kube-system rollout status deployment coredns
+
+    - name: Wait for control plane components to become ready
+      shell: |
+        set -eo pipefail
+        # Wait until there is at least one pod with the correct label
+        until kubectl -n kube-system get pod -l tier=control-plane,component={{ item }} -o json | jq -e '.items|length > 0'
+        do
+          sleep 1
+        done
+        # Then wait for them to go into the ready state
+        kubectl -n kube-system wait --for condition=ready pod -l tier=control-plane,component={{ item }} --timeout -1s
+      with_items:
+        - etcd
+        - kube-apiserver
+        - kube-controller-manager
+        - kube-scheduler
   when: kube_role == "master"
 
-- name: Configure host as worker
-  include_tasks: configure-worker.yml
+- name: Configure worker
+  block:
+    - name: Fetch kubeadm token from master
+      shell: |
+        set -eo pipefail
+        kubeadm token list | head -n 2 | tail -n 1 | awk '{ print $1 };'
+      register: kubeadm_token
+      delegate_to: "{{ kube_master_inventory_hostname }}"
+
+    - name: Join Kubernetes cluster
+      command: >
+        kubeadm join
+          --token={{ kubeadm_token.stdout }}
+          --node-name={{ ansible_hostname }}
+          --ignore-preflight-errors=cri
+          --discovery-token-unsafe-skip-ca-verification
+          {{ kube_master_ip }}:6443
+
+    - name: Wait for node to become ready
+      command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_hostname }}
+      delegate_to: "{{ kube_master_inventory_hostname }}"
   when: kube_role == "worker"
 
 - name: Set installed Kubernetes version fact

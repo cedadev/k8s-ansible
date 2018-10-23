@@ -1,0 +1,84 @@
+---
+
+- name: Ensure all non-Kubernetes packages are at the latest version
+  yum:
+    name: '*'
+    state: latest
+    disablerepo: kubernetes
+
+- name: Ensure firewalld is started
+  service:
+    name: firewalld
+    state: started
+    enabled: yes
+
+- name: Install firewalld services
+  copy:
+    src: files/firewalld/{{ item }}
+    dest: /etc/firewalld/services/{{ item }}
+  with_items:
+    - kubernetes-api-server.xml
+    - kubernetes-master.xml
+    - kubernetes-worker.xml
+    - weave-net.xml
+  register: firewalld_services
+
+- name: Reload firewalld
+  command: firewall-cmd --reload
+  when: firewalld_services is changed
+
+- name: Allow Kubernetes ports for cluster CIDR
+  firewalld:
+    rich_rule: 'rule family="ipv4" source address="{{ cluster_cidr }}" service name="{{ item }}" accept'
+    permanent: true
+    immediate: true
+    state: enabled
+  with_items:
+    - weave-net
+    - "kubernetes-{{ kube_role }}"
+
+- name: Allow external access to API server
+  firewalld:
+    service: kubernetes-api-server
+    permanent: true
+    immediate: true
+    state: enabled
+  when: kube_role == "master"
+
+- name: Create sysctl settings file for bridge settings
+  copy:
+    dest: /etc/sysctl.d/k8s.conf
+    content: |
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.bridge.bridge-nf-call-iptables = 1
+  register: sysctl_k8s
+
+- name: Load new sysctl settings
+  command: sysctl --system
+  when: sysctl_k8s is changed
+
+- name: Ensure SELinux is disabled
+  selinux:
+    state: disabled
+
+- name: Remove swap volumes from /etc/fstab
+  lineinfile:
+    path: /etc/fstab
+    state: absent
+    # This should match all lines with an fstype of "swap"
+    regexp: '^[^\s]+\s+[^\s]+\s+swap\s+'
+  register: remove_swap_volumes
+
+- name: Disable swap
+  command: swapoff --all
+  when: remove_swap_volumes is changed
+
+- name: Enable EPEL
+  yum:
+    name: epel-release
+    state: latest
+
+- name: Install jq
+  yum:
+    name: jq
+    state: latest

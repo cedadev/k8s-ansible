@@ -8,6 +8,7 @@ Vagrant.configure(2) do |config|
 
   # Allow root login with same key as vagrant user
   config.vm.provision :shell, inline: <<-SHELL
+    set -ex
     mkdir -p /root/.ssh
     cp ~vagrant/.ssh/authorized_keys /root/.ssh
   SHELL
@@ -15,15 +16,23 @@ Vagrant.configure(2) do |config|
   # Due to a Vagrant bug, eth1 stays down on boot on CentOS 7
   #   Here, we make sure it starts on each boot
   #   See https://github.com/mitchellh/vagrant/issues/8166
-  config.vm.provision :shell, run: "always", inline: "ifup eth1"
+  config.vm.provision :shell, run: "always", inline: <<-SHELL
+    set -ex
+    ifup eth1
+  SHELL
 
   # Make sure Kubernetes service traffic is routed over eth1
   # This is only necessary because eth1 is not the default interface
   # We can't just make eth1 the default interface because it won't route traffic to the internet
   config.vm.provision :shell, inline: <<-SHELL
+    set -exo pipefail
     my_ip="$(ip addr show eth1 | grep "inet " | awk '{ print $2; }' | cut -d "/" -f 1)"
     echo "10.96.0.0/12 via ${my_ip} dev eth1" > /etc/sysconfig/network-scripts/route-eth1
+    # For some reason, the first restart sometimes, but not always, refuses to pick up the new route
+    # Running two restarts together seems to make this more reliable...
     systemctl restart network
+    systemctl restart network
+    ip route list
   SHELL
 
   # Give each host 2 CPUs and 2GB RAM
@@ -55,8 +64,6 @@ Vagrant.configure(2) do |config|
           }
           ansible.extra_vars = {
             "cluster_interface" => "eth1",
-            "userspace_proxy" => true,
-            #"rook_version" => "v0.8.0-4.gfb2c208",
           }
         end
       end

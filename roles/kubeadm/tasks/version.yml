@@ -1,0 +1,54 @@
+---
+
+- name: Add yum repository for Kubernetes
+  yum_repository:
+    name: kubernetes
+    description: Kubernetes repo
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+    gpgcheck: yes
+    repo_gpgcheck: yes
+    gpgkey: >
+      https://packages.cloud.google.com/yum/doc/yum-key.gpg
+      https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+- name: Refresh yum package index
+  command: yum makecache -y
+  args:
+    warn: no
+
+# Tell the user which Kubernetes version we think they specified
+- debug:
+    msg: "Requested Kubernetes version: {{ kubernetes_version }}"
+
+# Get the currently installed version
+- name: Find installed Kubernetes version
+  shell: |
+    set -eo pipefail
+    yum list installed kubelet -q | tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
+  changed_when: false
+  failed_when: false
+  register: kubelet_installed
+
+- name: Set installed Kubernetes version fact
+  set_fact:
+    kubernetes_version_installed: "{{ kubelet_installed.stdout }}"
+  when: kubelet_installed.rc == 0
+
+- debug:
+    msg: "Installed Kubernetes version: {{ kubernetes_version_installed|default('none') }}"
+
+# Find the latest available Kubernetes version that conforms to the requested version
+- name: Find latest matching Kubernetes version
+  shell: |
+    set -eo pipefail
+    yum list available kubelet-{{ kubernetes_version }}* --showduplicates -q | \
+      tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
+  changed_when: false
+  register: kubelet_available
+
+- name: Set target Kubernetes version fact
+  set_fact:
+    kubernetes_version_target: "{{ kubelet_available.stdout }}"
+
+- debug:
+    msg: "Target Kubernetes version: {{ kubernetes_version_target }}"

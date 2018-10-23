@@ -1,8 +1,5 @@
 # The default Kubernetes version
-kubernetes_version: "1.11.1"
-
-# By default, use the iptables proxy
-userspace_proxy: false
+kubernetes_version: "1.12"
 
 # By default, use the default interface for cluster communication
 cluster_interface: "{{ ansible_default_ipv4.interface }}"
@@ -17,3 +14,16 @@ host_ip: "{{ cluster_iface_ipv4.address }}"
 # This is the CIDR of the cluster network
 # By default, use the network and netmask of the cluster_interface
 cluster_cidr: "{{ [cluster_iface_ipv4.network, cluster_iface_ipv4.netmask] | join('/') | ipaddr('net') }}"
+
+# The inventory hostname of the master node
+kube_master_inventory_hostname: "{{ groups['kube_masters'][0] }}"
+
+# The IP address on the cluster interfaace of the master node
+kube_master_ip: "{{ hostvars[kube_master_inventory_hostname]['ansible_' + cluster_interface].ipv4.address }}"
+
+# The timeout to allow nodes to drain before continuing regardless
+kubectl_drain_timeout: "300s"
+
+# By default, the upgrade tasks will only be run if the Kubernetes version is changing
+# Setting this to true forces the tasks to run, e.g. for package upgrades
+force_upgrade: false
