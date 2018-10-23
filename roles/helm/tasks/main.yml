@@ -43,7 +43,7 @@
   changed_when: result.rc == 0
   failed_when: result.rc != 0 and 'AlreadyExists' not in result.stderr
 
-# Add a toleration to the tiller pod spec so it is able to run on the master node
+# Add a toleration to the tiller pod spec so it is able to run on the master node
 - name: Install/upgrade tiller
   command: >
     helm init
