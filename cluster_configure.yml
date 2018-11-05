@@ -1,7 +1,11 @@
 ---
+#####
+## Performs Kubernetes cluster configuration for any inventory that defines
+## the groups "kube_masters" and "kube_workers"
+#####
 
 # Do cluster setup for all hosts
-- hosts: kube_masters,kube_workers
+- hosts: cluster
   remote_user: root
   any_errors_fatal: true
   roles:
