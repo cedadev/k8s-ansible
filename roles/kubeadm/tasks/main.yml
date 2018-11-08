@@ -22,9 +22,7 @@
   when:
     - inventory_hostname == host_item
     - kubernetes_version_installed is defined
-    # Allow an upgrade to be forced - this is used for general package updates
-    # when the Kubernetes version is not changing
-    - force_upgrade or (kubernetes_version_installed != kubernetes_version_target)
+    - (upgrade_packages | bool) or (upgrade_kubernetes | bool)
   # Make sure the masters are upgraded first
   with_items: "{{ groups['kube_masters']|list }} + {{ groups['kube_workers']|list }}"
   loop_control:

@@ -24,6 +24,6 @@ kube_master_ip: "{{ hostvars[kube_master_inventory_hostname]['ansible_' + cluste
 # The timeout to allow nodes to drain before continuing regardless
 kubectl_drain_timeout: "300s"
 
-# By default, the upgrade tasks will only be run if the Kubernetes version is changing
-# Setting this to true forces the tasks to run, e.g. for package upgrades
-force_upgrade: false
+# Only run upgrades if explicitly asked to
+upgrade_packages: no
+upgrade_kubernetes: no

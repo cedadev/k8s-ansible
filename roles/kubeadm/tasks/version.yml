@@ -1,4 +1,26 @@
 ---
+#####
+## These tasks decide what version of Kubernetes to try and install
+##
+## For worker nodes, the target version will be the exact version that is
+## installed on the master
+##
+## For the master, the target version is decided using the following logic:
+##
+##   1. If installing new worker nodes only, i.e. there is an existing
+##      installation, upgrade_packages = false and upgrade_kubernetes = false,
+##      the target version is the currently installed version (i.e. no change)
+##
+##   2. If there is an existing installation and upgrade_packages is true
+##      but upgrade_kubernetes is false, then the target version is the
+##      latest patch release of the currently installed minor version,
+##      e.g. if 1.12.0 is currently installed, then 1.12.1 would be
+##      installed if available, even if kubernetes_version is "1.13"
+##
+##   3. If there is no existing installation or upgrade_kubernetes = true
+##      (which implies upgrade_packages = true), the target version is the
+##      latest available version that matches kubernetes_version
+#####
 
 - name: Add yum repository for Kubernetes
   yum_repository:
@@ -16,11 +38,6 @@
   args:
     warn: no
 
-# Tell the user which Kubernetes version we think they specified
-- debug:
-    msg: "Requested Kubernetes version: {{ kubernetes_version }}"
-
-# Get the currently installed version
 - name: Find installed Kubernetes version
   shell: |
     set -eo pipefail
@@ -35,20 +52,47 @@
   when: kubelet_installed.rc == 0
 
 - debug:
-    msg: "Installed Kubernetes version: {{ kubernetes_version_installed|default('none') }}"
+    msg: "Installed Kubernetes version: {{ kubernetes_version_installed | default('none') }}"
 
-# Find the latest available Kubernetes version that conforms to the requested version
-- name: Find latest matching Kubernetes version
-  shell: |
-    set -eo pipefail
-    yum list available kubelet-{{ kubernetes_version }}* --showduplicates -q | \
-      tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
-  changed_when: false
-  register: kubelet_available
+- name: Set target Kubernetes version for master
+  block:
+    - name: Use currently installed version
+      set_fact:
+        kubernetes_version: "{{ kubernetes_version_installed }}"
+      when:
+        - kubernetes_version_installed is defined
+        - not (upgrade_packages | bool)
+        - not (upgrade_kubernetes | bool)
 
-- name: Set target Kubernetes version fact
+    - name: Find installed minor version
+      set_fact:
+        kubernetes_version: "{{ kubernetes_version_installed.split('.')[:-1] | join('.') }}"
+      when:
+        - kubernetes_version_installed is defined
+        - upgrade_packages | bool
+        - not (upgrade_kubernetes | bool)
+
+    - debug:
+        msg: "Requested Kubernetes version: {{ kubernetes_version }}"
+
+    # Find the latest available Kubernetes version that conforms to the requested version
+    - name: Find latest matching Kubernetes version
+      shell: |
+        set -eo pipefail
+        yum list available kubelet-{{ kubernetes_version }}* --showduplicates -q | \
+          tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
+      changed_when: false
+      register: kubelet_available
+
+    - name: Set target Kubernetes version fact
+      set_fact:
+        kubernetes_version_target: "{{ kubelet_available.stdout }}"
+  when: kube_role == "master"
+
+- name: Set target Kubernetes version for workers
   set_fact:
-    kubernetes_version_target: "{{ kubelet_available.stdout }}"
+    kubernetes_version_target: "{{ hostvars[kube_master_inventory_hostname].kubernetes_version_target }}"
+  when: kube_role == "worker"
 
 - debug:
     msg: "Target Kubernetes version: {{ kubernetes_version_target }}"
