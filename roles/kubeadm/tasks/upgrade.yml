@@ -7,7 +7,7 @@
   with_items:
     - kubeadm-{{ kubernetes_version_target }}
     - kubectl-{{ kubernetes_version_target }}
-  register: upgrade_kubeadm_kubectl
+  register: kubeadm_kubectl_upgraded
 
 # If kubectl was upgraded, upgrade the control plane
 - name: Upgrade control plane
@@ -19,7 +19,9 @@
       shell: |
         set -eo pipefail
         kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
-  when: kube_role == "master" and upgrade_kubeadm_kubectl is changed
+  when:
+    - kube_role == "master"
+    - kubeadm_kubectl_upgraded is changed
 
 # Try our best to drain pods from the host - if the drain times out, continue anyway
 - name: Drain pods from host
@@ -30,13 +32,13 @@
 
 - include_tasks: prerequisites.yml
 
-- name: Upgrade docker and kubelet packages
+## NOTE: docker will be upgraded as part of the general package upgrade if an update is available
+
+- name: Upgrade kubelet
   yum:
-    name: "{{ item }}"
+    name: kubelet
     state: latest
-  with_items:
-    - docker
-    - kubelet-{{ kubernetes_version_target }}
+  register: kubelet_upgraded
 
 - name: Reload systemd daemon
   systemd:
@@ -44,13 +46,16 @@
 
 - name: Upgrade kubelet config
   command: kubeadm upgrade node config --kubelet-version v{{ kubernetes_version_target }}
-  when: kube_role == "worker"
+  when:
+    - kube_role == "worker"
+    - kubelet_upgraded is changed
 
 - name: Override kubelet arguments
   copy:
     dest: /etc/sysconfig/kubelet
     content: |
       KUBELET_EXTRA_ARGS="--node-ip={{ host_ip }} --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice"
+  when: kubelet_upgraded is changed
 
 - name: Restart docker and kubelet
   service:
@@ -59,6 +64,7 @@
   with_items:
     - docker
     - kubelet
+  when: kubelet_upgraded is changed
 
 - name: Wait for API server to become available after restart (max 5 mins)
   command: kubectl version --request-timeout=1s
