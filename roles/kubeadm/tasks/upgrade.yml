@@ -36,7 +36,7 @@
 
 - name: Upgrade kubelet
   yum:
-    name: kubelet
+    name: kubelet-{{ kubernetes_version_target }}
     state: latest
   register: kubelet_upgraded
 
