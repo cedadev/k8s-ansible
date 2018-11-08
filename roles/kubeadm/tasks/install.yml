@@ -15,12 +15,11 @@
 
 - name: Install Kubernetes
   yum:
-    name: "{{ item }}"
+    name:
+      - "kubelet-{{ kubernetes_version_target }}"
+      - "kubeadm-{{ kubernetes_version_target }}"
+      - "kubectl-{{ kubernetes_version_target }}"
     state: latest
-  with_items:
-    - "kubelet-{{ kubernetes_version_target }}"
-    - "kubeadm-{{ kubernetes_version_target }}"
-    - "kubectl-{{ kubernetes_version_target }}"
 
 - name: Override kubelet arguments
   copy:

@@ -2,11 +2,10 @@
 
 - name: Upgrade kubeadm and kubectl
   yum:
-    name: "{{ item }}"
+    name:
+      - kubeadm-{{ kubernetes_version_target }}
+      - kubectl-{{ kubernetes_version_target }}
     state: latest
-  with_items:
-    - kubeadm-{{ kubernetes_version_target }}
-    - kubectl-{{ kubernetes_version_target }}
   register: kubeadm_kubectl_upgraded
 
 # If kubectl was upgraded, upgrade the control plane
