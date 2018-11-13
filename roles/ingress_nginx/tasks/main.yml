@@ -5,20 +5,20 @@
 
 - name: Ensure helm values directory exists
   file:
-    path: /root/helm/ingress_nginx
+    path: /root/helm
     state: directory
 
 - name: Copy Helm values to host
   copy:
     src: files/helm-values.yaml
-    dest: /root/helm/ingress_nginx/values.yaml
+    dest: /root/helm/ingress-nginx.yaml
 
 - name: Install/upgrade Nginx ingress controller
   command: >
     helm upgrade nginx-ingress stable/nginx-ingress
       --install
       --namespace nginx-ingress
-      --values /root/helm/ingress_nginx/values.yaml
+      --values /root/helm/ingress-nginx.yaml
 
 - name: Ensure Nginx ingress controller has started
   command: kubectl -n nginx-ingress rollout status deployment nginx-ingress-controller

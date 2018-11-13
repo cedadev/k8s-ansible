@@ -1,24 +1,37 @@
 ---
 
+- name: Ensure manifests directory exists
+  file:
+    path: /root/manifests
+    state: directory
+
+- name: Install certificate manifest
+  copy:
+    src: files/certificate.yaml
+    dest: /root/manifests/dashboard-certificate.yaml
+
+- name: Create the certificate
+  command: kubectl -n kube-system apply -f /root/manifests/dashboard-certificate.yaml
+
 - name: Update Helm repositories
   command: helm repo update
 
 - name: Ensure helm values directory exists
   file:
-    path: /root/helm/kubernetes_dashboard
+    path: /root/helm
     state: directory
 
 - name: Copy helm values to host
   copy:
     src: files/helm-values.yaml
-    dest: /root/helm/kubernetes_dashboard/values.yaml
+    dest: /root/helm/kubernetes-dashboard.yaml
 
 - name: Install/upgrade Kubernetes dashboard
   command: >
     helm upgrade kubernetes-dashboard stable/kubernetes-dashboard
       --install
       --namespace kube-system
-      --values /root/helm/kubernetes_dashboard/values.yaml
+      --values /root/helm/kubernetes-dashboard.yaml
 
 - name: Ensure Kubernetes dashboard has started
   command: kubectl -n kube-system rollout status deployment kubernetes-dashboard

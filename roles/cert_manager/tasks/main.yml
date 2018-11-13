@@ -44,22 +44,15 @@
         state: absent
   when: "'NotFound' in ca_secret_exists.stderr"
 
-- name: Make sure /root/manifests exists
+- name: Ensure manifests directory exists
   file:
     path: /root/manifests
     state: directory
 
-- name: Create default cluster issuer manifest
+- name: Install default cluster issuer manifest
   copy:
+    src: files/default-issuer.yaml
     dest: /root/manifests/default-issuer.yaml
-    content: |
-      apiVersion: certmanager.k8s.io/v1alpha1
-      kind: ClusterIssuer
-      metadata:
-        name: default-issuer
-      spec:
-        ca:
-          secretName: ca-key-pair
 
 - name: Create the Cluster Issuer
   command: kubectl -n cert-manager apply -f /root/manifests/default-issuer.yaml
