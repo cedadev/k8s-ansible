@@ -11,3 +11,47 @@
 
 - name: Ensure cert-manager has started
   command: kubectl -n cert-manager rollout status deployment cert-manager
+
+- name: Check if CA secret exists
+  command: kubectl -n cert-manager get secret ca-key-pair
+  failed_when: false
+  changed_when: false
+  register: ca_secret_exists
+
+- name: Create CA secret
+  block:
+    - name: Create temporary directory
+      tempfile:
+        state: directory
+      register: ca_directory
+
+    - name: Generate CA key pair
+      command: >
+        openssl req -x509 -new -nodes -days 3650 -reqexts v3_req -extensions v3_ca
+          -subj "/CN={{ cert_manager_ca_common_name | default('Cluster CA') }}"
+          -keyout {{ ca_directory.path }}/ca.key
+          -out {{ ca_directory.path }}/ca.crt
+
+    - name: Create CA key pair secret
+      command: >
+        kubectl -n cert-manager create secret tls ca-key-pair
+          --cert={{ ca_directory.path }}/ca.crt
+          --key={{ ca_directory.path }}/ca.key
+  always:
+    - name: Remove temporary directory
+      file:
+        path: "{{ ca_directory.path }}"
+        state: absent
+  when: "'NotFound' in ca_secret_exists.stderr"
+
+- name: Create the Cluster Issuer
+  command: |
+    kubectl -n cert-manager apply -f - <<EOF
+    apiVersion: certmanager.k8s.io/v1alpha1
+    kind: ClusterIssuer
+    metadata:
+      name: cluster-ca
+    spec:
+      ca:
+        secretName: ca-key-pair
+    EOF
