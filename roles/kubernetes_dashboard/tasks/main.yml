@@ -1,18 +1,5 @@
 ---
 
-- name: Ensure manifests directory exists
-  file:
-    path: /root/manifests
-    state: directory
-
-- name: Install certificate manifest
-  copy:
-    src: files/certificate.yaml
-    dest: /root/manifests/dashboard-certificate.yaml
-
-- name: Create the certificate
-  command: kubectl -n kube-system apply -f /root/manifests/dashboard-certificate.yaml
-
 - name: Update Helm repositories
   command: helm repo update
 

@@ -4,15 +4,12 @@ rbac:
 serviceAccount:
   create: true
 
-# Deploy the ingress controller to the master node, using the host network
-#   This is achieved by using a nodeSelector and toleration of the node-role/master taint
-# This means that we can expose the cluster just by exposing the master node
-# Make sure to use the RollingUpdate update strategy
-# Set minAvailable to 0 for the controller and the default backend as not
-# doing so would prevent us from draining the master for maintenance
 controller:
+  # Make sure to use the RollingUpdate update strategy
   updateStrategy:
     type: RollingUpdate
+  # Deploy the ingress controller to the master node, using the host network
+  # This means that we can expose the cluster just by exposing the master node
   hostNetwork: true
   service:
     type: ClusterIP
@@ -22,7 +19,6 @@ controller:
       effect: NoSchedule
   nodeSelector:
     "node-role.kubernetes.io/master": ""
-  minAvailable: 0
-
-defaultBackend:
-  minAvailable: 0
+  # Enable SSL passthrough so that application can use it if they wish
+  extraArgs:
+    "enable-ssl-passthrough": ""
