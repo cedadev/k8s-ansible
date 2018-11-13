@@ -45,7 +45,7 @@
   when: "'NotFound' in ca_secret_exists.stderr"
 
 - name: Create the Cluster Issuer
-  command: |
+  shell: |
     kubectl -n cert-manager apply -f - <<EOF
     apiVersion: certmanager.k8s.io/v1alpha1
     kind: ClusterIssuer
