@@ -18,3 +18,4 @@
   roles:
     - helm
     - ingress_nginx
+    - kubernetes_dashboard

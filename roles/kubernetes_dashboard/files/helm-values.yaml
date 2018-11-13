@@ -1,8 +1,3 @@
-fullnameOverride: kubernetes-dashboard
-
 ingress:
-  enabled: false
-
-rbac:
-  create: true
-  clusterAdminRole: true
+  enabled: true
+  path: /_dashboard
