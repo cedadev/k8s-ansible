@@ -1,0 +1,13 @@
+---
+
+- name: Update Helm repositories
+  command: helm repo update
+
+- name: Install/upgrade cert-manager
+  command: >
+    helm upgrade cert-manager stable/cert-manager
+      --install
+      --namespace cert-manager
+
+- name: Ensure cert-manager has started
+  command: kubectl -n cert-manager rollout status deployment cert-manager
