@@ -1,7 +1,8 @@
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
 # Make sure the hostname is used for the node name
-nodeName: "{{ ansible_hostname }}"
+nodeRegistration:
+  name: "{{ ansible_hostname }}"
 # Use the required Kubernetes version
 kubernetesVersion: "{{ kubernetes_version_target }}"
 # Make sure the token doesn't expire
@@ -10,6 +11,6 @@ tokenTTL: 0
 api:
   advertiseAddress: "{{ host_ip }}"
 # Assume cloud providers are using the external providers interface
-{%- if cloud_provider is defined %}
+{% if cloud_provider is defined %}
 cloudProvider: external
-{%- endif %}
+{% endif %}
