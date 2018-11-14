@@ -45,7 +45,6 @@
       command: >
         kubeadm init
           --config /etc/kubernetes/kubeadm-master-config.yaml
-          --node-name={{ ansible_hostname }}
           --ignore-preflight-errors=cri
 
     - name: Ensure /root/.kube exists

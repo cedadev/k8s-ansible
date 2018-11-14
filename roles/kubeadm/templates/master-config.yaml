@@ -1,5 +1,7 @@
 apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+# Make sure the hostname is used for the node name
+nodeName: "{{ ansible_hostname }}"
 # Use the required Kubernetes version
 kubernetesVersion: "{{ kubernetes_version_target }}"
 # Make sure the token doesn't expire
