@@ -3,22 +3,12 @@
 - name: Update Helm repositories
   command: helm repo update
 
-- name: Ensure helm values directory exists
-  file:
-    path: /root/helm
-    state: directory
-
-- name: Copy helm values to host
-  copy:
-    src: files/helm-values.yaml
-    dest: /root/helm/kubernetes-dashboard.yaml
-
 - name: Install/upgrade Kubernetes dashboard
   command: >
     helm upgrade kubernetes-dashboard stable/kubernetes-dashboard
       --install
       --namespace kube-system
-      --values /root/helm/kubernetes-dashboard.yaml
+      --set fullnameOverride=kubernetes-dashboard
 
 - name: Ensure Kubernetes dashboard has started
   command: kubectl -n kube-system rollout status deployment kubernetes-dashboard
