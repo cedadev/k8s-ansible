@@ -10,4 +10,4 @@ api:
 # Assume cloud providers are using the external providers interface
 {%- if cloud_provider is defined %}
 cloudProvider: external
-{%- end %}
+{%- endif %}
