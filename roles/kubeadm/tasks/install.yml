@@ -25,7 +25,7 @@
   copy:
     dest: /etc/sysconfig/kubelet
     content: |
-      KUBELET_EXTRA_ARGS="--node-ip={{ host_ip }} --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice"
+      KUBELET_EXTRA_ARGS="{{ kubelet_extra_args }}"
 
 - name: Ensure kubelet is started
   service:
@@ -36,14 +36,15 @@
 # Configure the master first
 - name: Configure master
   block:
-    # Set the token TTL so that the token doesn't expire
-    # Use the IP address as the node name
+    - name: Write kubeadm master configuration
+      template:
+        src: templates/master-config.yaml
+        dest: /etc/kubernetes/kubeadm-master-config.yaml
+
     - name: Initialise Kubernetes master
       command: >
         kubeadm init
-          --kubernetes-version={{ kubernetes_version_target }}
-          --token-ttl=0
-          --apiserver-advertise-address={{ host_ip }}
+          --config /etc/kubernetes/kubeadm-master-config.yaml
           --node-name={{ ansible_hostname }}
           --ignore-preflight-errors=cri
 

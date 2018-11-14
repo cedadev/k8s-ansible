@@ -53,7 +53,7 @@
   copy:
     dest: /etc/sysconfig/kubelet
     content: |
-      KUBELET_EXTRA_ARGS="--node-ip={{ host_ip }} --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice"
+      KUBELET_EXTRA_ARGS="{{ kubelet_extra_args }}"
   when: kubelet_upgraded is changed
 
 - name: Restart docker and kubelet

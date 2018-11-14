@@ -1,0 +1,13 @@
+apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+# Use the required Kubernetes version
+kubernetesVersion: "{{ kubernetes_version_target }}"
+# Make sure the token doesn't expire
+tokenTTL: 0
+# Make sure to advertise the API on the correct IP
+api:
+  advertiseAddress: "{{ host_ip }}"
+# Assume cloud providers are using the external providers interface
+{%- if cloud_provider is defined %}
+cloudProvider: external
+{%- end %}
