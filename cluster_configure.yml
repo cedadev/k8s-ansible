@@ -18,5 +18,4 @@
   roles:
     - helm
     - ingress_nginx
-    - cert_manager
-    - kubernetes_dashboard
+#    - kubernetes_dashboard
