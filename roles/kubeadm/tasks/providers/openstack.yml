@@ -5,15 +5,20 @@
     src: templates/openstack-config
     dest: /etc/kubernetes/cloud-config
 
-- name: Create configmap for OpenStack config
+- name: Create/update configmap for OpenStack config
   shell: |
     set -eo pipefail
     kubectl -n kube-system create configmap cloud-config \
       --from-file=/etc/kubernetes/cloud-config -o yaml --dry-run | \
       kubectl apply -f -
 
+- name: Install OpenStack cloud controller manager manifest
+  copy:
+    src: files/openstack-cloud-controller-manager-pod.yaml
+    dest: /etc/kubernetes
+
 - name: Install/upgrade OpenStack cloud controller manager
-  command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/master/manifests/controller-manager/openstack-cloud-controller-manager-pod.yaml
+  command: kubectl apply -f /etc/kubernetes/openstack-cloud-controller-manager-pod.yaml
 
 - name: Ensure OpenStack cloud controller manager has started
   command: kubectl -n kube-system wait --for condition=ready --timeout -1s pod openstack-cloud-controller-manager
