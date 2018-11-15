@@ -47,6 +47,8 @@ spec:
     - key: "node.cloudprovider.kubernetes.io/uninitialized"
       value: "true"
       effect: "NoSchedule"
+    - key: "node.kubernetes.io/not-ready"
+      effect: "NoSchedule"
   volumes:
   - hostPath:
       path: /usr/libexec/kubernetes/kubelet-plugins/volume/exec
