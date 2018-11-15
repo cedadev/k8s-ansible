@@ -58,6 +58,10 @@
         src: /etc/kubernetes/admin.conf
         dest: /root/.kube/config
 
+    - name: Install cloud provider customisations
+      include_tasks: "providers/{{ cloud_provider }}.yml"
+      when: cloud_provider is defined
+
     - name: Install pod network
       shell: |
         set -eo pipefail

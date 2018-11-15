@@ -1,0 +1,19 @@
+---
+
+- name: Create OpenStack config file
+  template:
+    src: templates/openstack-config
+    dest: /etc/kubernetes/cloud-config
+
+- name: Create configmap for OpenStack config
+  shell: |
+    set -eo pipefail
+    kubectl -n kube-system create configmap cloud-config \
+      --from-file=/etc/kubernetes/cloud-config -o yaml --dry-run | \
+      kubectl apply -f -
+
+- name: Install/upgrade OpenStack cloud controller manager
+  command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/master/manifests/controller-manager/openstack-cloud-controller-manager-ds.yaml
+
+- name: Ensure OpenStack cloud controller manager has started
+  command: kubectl -n kube-system rollout status daemonset openstack-cloud-controller-manager
