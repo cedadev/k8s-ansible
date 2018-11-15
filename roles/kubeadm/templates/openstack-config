@@ -1,0 +1,9 @@
+[Global]
+auth-url={{ openstack_auth_url }}
+domain-name={{ openstack_domain_name }}
+tenant-id={{ openstack_project_id }}
+username={{ openstack_username }}
+password={{ openstack_password }}
+
+[BlockStorage]
+bs-version=v2

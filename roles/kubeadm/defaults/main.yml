@@ -36,3 +36,10 @@ kubelet_extra_args: >-
   --runtime-cgroups=/systemd/system.slice
   --kubelet-cgroups=/systemd/system.slice
   {% if cloud_provider is defined %}--cloud-provider=external{% endif %}
+
+# By default, take the OpenStack variables from the environment vars
+openstack_auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
+openstack_domain_name: "{{ lookup('env', 'OS_DOMAIN_NAME') }}"
+openstack_project_id: "{{ lookup('env', 'OS_PROJECT_ID') }}"
+openstack_username: "{{ lookup('env', 'OS_USERNAME') }}"
+openstack_password: "{{ lookup('env', 'OS_PASSWORD') }}"
