@@ -1,5 +1,11 @@
 ---
 
+# Restart kubelet due to this bug - https://github.com/kubernetes/kubernetes/issues/68270
+- name: Restart kubelet
+  service:
+    name: kubelet
+    state: restarted
+
 - name: Create OpenStack config file
   template:
     src: templates/openstack-config
