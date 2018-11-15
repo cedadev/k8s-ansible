@@ -21,4 +21,11 @@
   command: kubectl apply -f /etc/kubernetes/openstack-cloud-controller-manager-pod.yaml
 
 - name: Ensure OpenStack cloud controller manager has started
-  command: kubectl -n kube-system wait --for condition=ready --timeout -1s pod openstack-cloud-controller-manager
+  shell: >
+    # First, wait for the pod to appear
+    until kubectl -n kube-system get pod openstack-cloud-controller-manager
+    do
+      sleep 1
+    done
+    # Then wait for it to become ready
+    kubectl -n kube-system wait --for condition=ready --timeout -1s pod openstack-cloud-controller-manager
