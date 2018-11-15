@@ -13,7 +13,7 @@
       kubectl apply -f -
 
 - name: Install/upgrade OpenStack cloud controller manager
-  command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/master/manifests/controller-manager/openstack-cloud-controller-manager-ds.yaml
+  command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/master/manifests/controller-manager/openstack-cloud-controller-manager-pod.yaml
 
 - name: Ensure OpenStack cloud controller manager has started
-  command: kubectl -n kube-system rollout status daemonset openstack-cloud-controller-manager
+  command: kubectl -n kube-system wait --for condition=ready --timeout -1s pod openstack-cloud-controller-manager
