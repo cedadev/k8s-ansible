@@ -28,7 +28,7 @@
     enabled: yes
 
 - name: Perform cloud-provider specific config
-  include_tasks: "providers/{{ cloud_provider }}.yaml"
+  include_tasks: "providers/{{ cloud_provider }}.yml"
   when: cloud_provider is defined
 
 # Configure the master first
