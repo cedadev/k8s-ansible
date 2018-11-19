@@ -21,17 +21,15 @@
       - "kubectl-{{ kubernetes_version_target }}"
     state: latest
 
-#- name: Override kubelet arguments
-#  copy:
-#    dest: /etc/sysconfig/kubelet
-#    content: |
-#      KUBELET_EXTRA_ARGS="{{ kubelet_extra_args }}"
-
 - name: Ensure kubelet is started
   service:
     name: kubelet
     state: started
     enabled: yes
+
+- name: Perform cloud-provider specific config
+  include_tasks: "providers/{{ cloud_provider }}.yaml"
+  when: cloud_provider is defined
 
 # Configure the master first
 - name: Configure master
@@ -46,7 +44,7 @@
 
     - name: Write kubeadm master configuration
       template:
-        src: templates/master-config.yaml
+        src: "templates/master-config-{{ cloud_provider | default('default') }}.yaml"
         dest: /etc/kubernetes/kubeadm-master-config.yaml
 
     - name: Initialise Kubernetes master
@@ -65,10 +63,6 @@
         remote_src: yes
         src: /etc/kubernetes/admin.conf
         dest: /root/.kube/config
-
-    - name: Install cloud provider customisations
-      include_tasks: "providers/{{ cloud_provider }}.yml"
-      when: cloud_provider is defined
 
     - name: Install pod network
       shell: |
@@ -131,7 +125,7 @@
 
     - name: Write kubeadm worker configuration
       template:
-        src: templates/worker-config.yaml
+        src: "templates/worker-config-{{ cloud_provider | default('default') }}.yaml"
         dest: /etc/kubernetes/kubeadm-worker-config.yaml
 
     - name: Join Kubernetes cluster

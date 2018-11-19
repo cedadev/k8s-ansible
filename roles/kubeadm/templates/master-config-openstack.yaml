@@ -1,0 +1,23 @@
+{% extends "master-config-default.yaml" %}
+
+{% block kubelet_extra_args %}
+    cloud-provider: openstack
+    cloud-config: /etc/kubernetes/cloud.conf
+{% endblock %}
+
+{% block cluster_config %}
+apiServerExtraArgs:
+  cloud-provider: openstack
+  cloud-config: "/etc/kubernetes/cloud.conf"
+apiServerExtraVolumes:
+  - name: cloud
+    hostPath: "/etc/kubernetes/cloud.conf"
+    mountPath: "/etc/kubernetes/cloud.conf"
+controllerManagerExtraArgs:
+  cloud-provider: openstack
+  cloud-config: "/etc/kubernetes/cloud.conf"
+controllerManagerExtraVolumes:
+  - name: cloud
+    hostPath: "/etc/kubernetes/cloud.conf"
+    mountPath: "/etc/kubernetes/cloud.conf"
+{% endblock %}

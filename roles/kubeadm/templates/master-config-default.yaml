@@ -17,28 +17,10 @@ nodeRegistration:
     node-ip: "{{ host_ip }}"
     runtime-cgroups: /systemd/system.slice
     kubelet-cgroups: /systemd/system.slice
-{% if cloud_provider is defined -%}
-    cloud-provider: "{{ cloud_provider }}"
-    cloud-config: /etc/kubernetes/cloud.conf
-{%- endif %}
+{% block kubelet_extra_args %}{% endblock %}
 ---
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
 # Use the required Kubernetes version
 kubernetesVersion: "{{ kubernetes_version_target }}"
-{% if cloud_provider is defined -%}
-apiServerExtraArgs:
-  cloud-provider: "{{ cloud_provider }}"
-  cloud-config: "/etc/kubernetes/cloud.conf"
-apiServerExtraVolumes:
-  - name: cloud
-    hostPath: "/etc/kubernetes/cloud.conf"
-    mountPath: "/etc/kubernetes/cloud.conf"
-controllerManagerExtraArgs:
-  cloud-provider: "{{ cloud_provider }}"
-  cloud-config: "/etc/kubernetes/cloud.conf"
-controllerManagerExtraVolumes:
-  - name: cloud
-    hostPath: "/etc/kubernetes/cloud.conf"
-    mountPath: "/etc/kubernetes/cloud.conf"
-{%- endif %}
+{% block cluster_config %}{% endblock %}

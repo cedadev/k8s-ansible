@@ -28,15 +28,6 @@ kubectl_drain_timeout: "300s"
 upgrade_packages: no
 upgrade_kubernetes: no
 
-# Extra args for the kubelet
-# In particular, make sure the correct network interface is being used
-# If a cloud provider is set, assume they are using the external provider interface
-kubelet_extra_args: >-
-  --node-ip={{ host_ip }}
-  --runtime-cgroups=/systemd/system.slice
-  --kubelet-cgroups=/systemd/system.slice
-  {% if cloud_provider is defined %}--cloud-provider=external{% endif %}
-
 # By default, take the OpenStack variables from the environment vars
 openstack_auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
 openstack_domain_name: "{{ lookup('env', 'OS_DOMAIN_NAME') }}"
