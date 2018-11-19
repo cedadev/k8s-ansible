@@ -1,0 +1,17 @@
+apiVersion: kubeadm.k8s.io/v1alpha3
+kind: JoinConfiguration
+apiEndpoint:
+  advertiseAddress: "{{ kube_master_ip }}"
+  bindPort: 6443
+discoveryTokenUnsafeSkipCAVerification: true
+nodeRegistration:
+  name: "{{ ansible_hostname }}"
+  kubeletExtraArgs:
+    node-ip: "{{ host_ip }}"
+    runtime-cgroups: /systemd/system.slice
+    kubelet-cgroups: /systemd/system.slice
+    {% if cloud_provider is defined -%}
+    cloud-provider: "{{ cloud_provider }}"
+    cloud-config: /etc/kubernetes/cloud.conf
+    {%- endif %}
+token: "{{ kubeadm_token }}"

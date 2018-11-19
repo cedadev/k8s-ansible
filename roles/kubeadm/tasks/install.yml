@@ -21,11 +21,11 @@
       - "kubectl-{{ kubernetes_version_target }}"
     state: latest
 
-- name: Override kubelet arguments
-  copy:
-    dest: /etc/sysconfig/kubelet
-    content: |
-      KUBELET_EXTRA_ARGS="{{ kubelet_extra_args }}"
+#- name: Override kubelet arguments
+#  copy:
+#    dest: /etc/sysconfig/kubelet
+#    content: |
+#      KUBELET_EXTRA_ARGS="{{ kubelet_extra_args }}"
 
 - name: Ensure kubelet is started
   service:
@@ -36,6 +36,14 @@
 # Configure the master first
 - name: Configure master
   block:
+    - name: Generate kubeadm token
+      command: kubeadm token generate
+      register: kubeadm_token_cmd
+
+    - name: Set kubeadm_token fact
+      set_fact:
+        kubeadm_token: "{{ kubeadm_token_cmd.stdout }}"
+
     - name: Write kubeadm master configuration
       template:
         src: templates/master-config.yaml
@@ -88,6 +96,24 @@
         - kube-apiserver
         - kube-controller-manager
         - kube-scheduler
+  # If something goes wrong, undo changes and uninstall the Kubernetes packages
+  rescue:
+    - name: Reset changes made by kubeadm init
+      command: kubeadm reset --force
+
+    - name: Uninstall Kubernetes packages
+      yum:
+        name:
+          - "kubelet"
+          - "kubeadm"
+          - "kubectl"
+        state: absent
+
+    # If a rescue block runs successfully, the play continues
+    # We don't want that, so explicitly fail again
+    - name: Installation aborted
+      fail:
+        msg: "Task '{{ ansible_failed_task.name }}' failed"
   when: kube_role == "master"
 
 - name: Configure worker
@@ -96,21 +122,45 @@
       shell: |
         set -eo pipefail
         kubeadm token list | head -n 2 | tail -n 1 | awk '{ print $1 };'
-      register: kubeadm_token
+      register: kubeadm_token_cmd
       delegate_to: "{{ kube_master_inventory_hostname }}"
+
+    - name: Set kubeadm_token fact
+      set_fact:
+        kubeadm_token: "{{ kubeadm_token_cmd.stdout }}"
+
+    - name: Write kubeadm worker configuration
+      template:
+        src: templates/worker-config.yaml
+        dest: /etc/kubernetes/kubeadm-worker-config.yaml
 
     - name: Join Kubernetes cluster
       command: >
         kubeadm join
-          --token={{ kubeadm_token.stdout }}
-          --node-name={{ ansible_hostname }}
+          --config=/etc/kubernetes/kubeadm-worker-config.yaml
           --ignore-preflight-errors=cri
-          --discovery-token-unsafe-skip-ca-verification
-          {{ kube_master_ip }}:6443
 
     - name: Wait for node to become ready
       command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_hostname }}
       delegate_to: "{{ kube_master_inventory_hostname }}"
+  # If something goes wrong, undo changes and uninstall the Kubernetes packages
+  rescue:
+    - name: Reset changes made by kubeadm join
+      command: kubeadm reset --force
+
+    - name: Uninstall Kubernetes packages
+      yum:
+        name:
+          - "kubelet"
+          - "kubeadm"
+          - "kubectl"
+        state: absent
+
+    # If a rescue block runs successfully, the play continues
+    # We don't want that, so explicitly fail again
+    - name: Installation aborted
+      fail:
+        msg: "Task '{{ ansible_failed_task.name }}' failed"
   when: kube_role == "worker"
 
 - name: Set installed Kubernetes version fact

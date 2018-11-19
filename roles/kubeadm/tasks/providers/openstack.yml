@@ -27,7 +27,7 @@
   command: kubectl apply -f /etc/kubernetes/openstack-cloud-controller-manager-pod.yaml
 
 - name: Ensure OpenStack cloud controller manager has started
-  shell: >
+  shell: |
     # First, wait for the pod to appear
     until kubectl -n kube-system get pod openstack-cloud-controller-manager
     do

@@ -1,16 +1,44 @@
-apiVersion: kubeadm.k8s.io/v1alpha2
-kind: MasterConfiguration
-# Make sure the hostname is used for the node name
+apiVersion: kubeadm.k8s.io/v1alpha3
+kind: InitConfiguration
+# Make sure to advertise the API on the correct IP
+apiEndpoint:
+  advertiseAddress: "{{ host_ip }}"
+bootstrapTokens:
+  - groups:
+      - system:bootstrappers:kubeadm:default-node-token
+    token: "{{ kubeadm_token }}"
+    ttl: "0"
+    usages:
+      - signing
+      - authentication
 nodeRegistration:
   name: "{{ ansible_hostname }}"
+  kubeletExtraArgs:
+    node-ip: "{{ host_ip }}"
+    runtime-cgroups: /systemd/system.slice
+    kubelet-cgroups: /systemd/system.slice
+    {% if cloud_provider is defined -%}
+    cloud-provider: "{{ cloud_provider }}"
+    cloud-config: /etc/kubernetes/cloud.conf
+    {%- endif %}
+---
+apiVersion: kubeadm.k8s.io/v1alpha3
+kind: ClusterConfiguration
 # Use the required Kubernetes version
 kubernetesVersion: "{{ kubernetes_version_target }}"
-# Make sure the token doesn't expire
-tokenTTL: 0
-# Make sure to advertise the API on the correct IP
-api:
-  advertiseAddress: "{{ host_ip }}"
-# Assume cloud providers are using the external providers interface
 {% if cloud_provider is defined %}
-cloudProvider: external
+apiServerExtraArgs:
+  cloud-provider: "{{ cloud_provider }}"
+  cloud-config: "/etc/kubernetes/cloud.conf"
+apiServerExtraVolumes:
+  - name: cloud
+    hostPath: "/etc/kubernetes/cloud.conf"
+    mountPath: "/etc/kubernetes/cloud.conf"
+controllerManagerExtraArgs:
+  cloud-provider: "{{ cloud_provider }}"
+  cloud-config: "/etc/kubernetes/cloud.conf"
+controllerManagerExtraVolumes:
+  - name: cloud
+    hostPath: "/etc/kubernetes/cloud.conf"
+    mountPath: "/etc/kubernetes/cloud.conf"
 {% endif %}
