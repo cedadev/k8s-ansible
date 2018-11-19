@@ -5,6 +5,7 @@
     name: '*'
     state: latest
     disablerepo: kubernetes
+  when: "upgrade_packages | bool"
 
 - name: Check if a reboot is required
   command: needs-restarting -r

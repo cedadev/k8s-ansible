@@ -10,8 +10,8 @@ nodeRegistration:
     node-ip: "{{ host_ip }}"
     runtime-cgroups: /systemd/system.slice
     kubelet-cgroups: /systemd/system.slice
-    {% if cloud_provider is defined -%}
+{% if cloud_provider is defined -%}
     cloud-provider: "{{ cloud_provider }}"
     cloud-config: /etc/kubernetes/cloud.conf
-    {%- endif %}
+{%- endif %}
 token: "{{ kubeadm_token }}"
