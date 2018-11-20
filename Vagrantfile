@@ -54,13 +54,13 @@ Vagrant.configure(2) do |config|
 
       if n == N_WORKERS
         node.vm.provision :ansible do |ansible|
-          ansible.playbook = "cluster.yml"
+          ansible.playbook = "cluster_configure.yml"
           # ansible.verbose = "vvvv"
           ansible.limit = "all"
           ansible.force_remote_user = false
           ansible.groups = {
-            "kube_masters"  => ["kube-master"],
-            "kube_workers" => (1..N_WORKERS).map { |n| "kube-worker%d" % n },
+            "kube-masters"  => ["kube-master"],
+            "kube-workers" => (1..N_WORKERS).map { |n| "kube-worker%d" % n },
           }
           ansible.extra_vars = {
             "cluster_interface" => "eth1",

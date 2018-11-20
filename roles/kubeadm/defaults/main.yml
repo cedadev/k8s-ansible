@@ -16,7 +16,7 @@ host_ip: "{{ cluster_iface_ipv4.address }}"
 cluster_cidr: "{{ [cluster_iface_ipv4.network, cluster_iface_ipv4.netmask] | join('/') | ipaddr('net') }}"
 
 # The inventory hostname of the master node
-kube_master_inventory_hostname: "{{ groups['kube_masters'][0] }}"
+kube_master_inventory_hostname: "{{ groups['kube-masters'][0] }}"
 
 # The IP address on the cluster interfaace of the master node
 kube_master_ip: "{{ hostvars[kube_master_inventory_hostname]['ansible_' + cluster_interface].ipv4.address }}"

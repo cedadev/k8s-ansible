@@ -1,7 +1,7 @@
 ---
 #####
 ## Performs Kubernetes cluster configuration for any inventory that defines
-## the groups "kube_masters" and "kube_workers"
+## the groups "kube-masters" and "kube-workers"
 #####
 
 # Do cluster setup for all hosts
@@ -12,7 +12,7 @@
     - kubeadm
 
 # Install addons via the master
-- hosts: kube_masters
+- hosts: kube-masters
   remote_user: root
   any_errors_fatal: true
   roles:

@@ -4,14 +4,14 @@
 - fail:
     msg: "Exactly one master is required"
   run_once: true
-  when: "groups['kube_masters']|length != 1"
+  when: "groups['kube-masters']|length != 1"
 
 # There should be no crossover between the masters and the workers
 - fail:
     msg: "Masters cannot also be workers"
   when:
-    - inventory_hostname in groups['kube_masters']
-    - inventory_hostname in groups['kube_workers']
+    - inventory_hostname in groups['kube-masters']
+    - inventory_hostname in groups['kube-workers']
 
 # Get the Kubernetes version information
 - include_tasks: version.yml
@@ -24,7 +24,7 @@
     - kubernetes_version_installed is defined
     - (upgrade_packages | bool) or (upgrade_kubernetes | bool)
   # Make sure the masters are upgraded first
-  with_items: "{{ groups['kube_masters']|list }} + {{ groups['kube_workers']|list }}"
+  with_items: "{{ groups['kube-masters']|list }} + {{ groups['kube-workers']|list }}"
   loop_control:
     loop_var: host_item
 
