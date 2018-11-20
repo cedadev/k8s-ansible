@@ -1,4 +1,4 @@
-{% extends "../default/worker-config.yaml" %}
+{% extends "default/worker-config.yaml" %}
 
 {% block kubelet_extra_args %}
     cloud-provider: openstack

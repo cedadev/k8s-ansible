@@ -7,14 +7,12 @@
 # Do cluster setup for all hosts
 - hosts: cluster
   remote_user: root
-  any_errors_fatal: true
   roles:
     - kubeadm
 
 # Install addons via the master
 - hosts: kube-masters
   remote_user: root
-  any_errors_fatal: true
   roles:
     - helm
     - ingress_nginx

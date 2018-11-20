@@ -1,4 +1,4 @@
-{% extends "../default/master-config.yaml" %}
+{% extends "default/master-config.yaml" %}
 
 {% block kubelet_extra_args %}
     cloud-provider: openstack
