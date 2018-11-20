@@ -1,5 +1,0 @@
----
-
-- name: Label storage nodes
-  command: kubectl label --overwrite node {{ host_ip }} "storage=rook"
-  delegate_to: "{{ groups['kube-masters'][0] }}"

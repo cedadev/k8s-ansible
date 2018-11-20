@@ -7,8 +7,8 @@
 
 - name: Install Cinder storage class manifest
   template:
-    src: templates/openstack/cinder-storage-class.yaml
-    dest: /root/manifests/openstack-cinder-storage-class.yaml
+    src: templates/openstack/cinder-storageclass.yaml
+    dest: /root/manifests/openstack-cinder-storageclass.yaml
 
 - name: Install Cinder storage class
-  command: kubectl apply -f /root/manifests/openstack-cinder-storage-class.yaml
+  command: kubectl apply -f /root/manifests/openstack-cinder-storageclass.yaml
