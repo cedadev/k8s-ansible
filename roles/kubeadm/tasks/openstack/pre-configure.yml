@@ -1,5 +1,10 @@
 ---
 
+- name: Ensure /etc/kubernetes exists
+  file:
+    path: /etc/kubernetes
+    state: directory
+
 - name: Create OpenStack config file
   template:
     src: templates/openstack/cloud-config
