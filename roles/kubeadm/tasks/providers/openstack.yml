@@ -1,6 +1,0 @@
----
-
-- name: Create OpenStack config file
-  template:
-    src: templates/openstack-config
-    dest: /etc/kubernetes/cloud.conf

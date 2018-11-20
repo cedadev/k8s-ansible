@@ -16,6 +16,13 @@
 # Get the Kubernetes version information
 - include_tasks: version.yml
 
+- name: Cloud-provider pre-configuration tasks
+  include_tasks: "{{ lookup('first_found', try_files) }}"
+  vars:
+    try_files:
+      - "{{ cloud_provider }}/pre-configure.yml"
+      - "noop/pre-configure.yml"
+
 # Upgrade existing nodes first
 # We use a trick so that only one host is upgraded at once
 - include_tasks: upgrade.yml
@@ -36,3 +43,10 @@
 # The final step is to remove any nodes that are no longer in the inventory
 - include_tasks: remove.yml
   when: kube_role == "master"
+
+- name: Cloud-provider post-configuration tasks
+  include_tasks: "{{ lookup('first_found', try_files) }}"
+  vars:
+    try_files:
+      - "{{ cloud_provider }}/post-configure.yml"
+      - "noop/post-configure.yml"

@@ -27,72 +27,108 @@
     state: started
     enabled: yes
 
-- name: Perform cloud-provider specific config
-  include_tasks: "providers/{{ cloud_provider }}.yml"
-  when: cloud_provider is defined
+# This outer block allows us to roll back the Kubernetes initialisation if it goes wrong
+- block:
+    # Configure the master first
+    - name: Configure master
+      block:
+        - name: Generate kubeadm token
+          command: kubeadm token generate
+          register: kubeadm_token_cmd
 
-# Configure the master first
-- name: Configure master
-  block:
-    - name: Generate kubeadm token
-      command: kubeadm token generate
-      register: kubeadm_token_cmd
+        - name: Set kubeadm_token fact
+          set_fact:
+            kubeadm_token: "{{ kubeadm_token_cmd.stdout }}"
 
-    - name: Set kubeadm_token fact
-      set_fact:
-        kubeadm_token: "{{ kubeadm_token_cmd.stdout }}"
+        - name: Write kubeadm master configuration
+          template:
+            src: "{{ lookup('first_found', try_files) }}"
+            dest: /etc/kubernetes/kubeadm-master-config.yaml
+          vars:
+            try_files:
+              - "templates/{{ cloud_provider }}/master-config.yaml"
+              - "templates/default/master-config.yaml"
 
-    - name: Write kubeadm master configuration
-      template:
-        src: "templates/master-config-{{ cloud_provider | default('default') }}.yaml"
-        dest: /etc/kubernetes/kubeadm-master-config.yaml
+        - name: Initialise Kubernetes master
+          command: >
+            kubeadm init
+              --config /etc/kubernetes/kubeadm-master-config.yaml
+              --ignore-preflight-errors=cri
 
-    - name: Initialise Kubernetes master
-      command: >
-        kubeadm init
-          --config /etc/kubernetes/kubeadm-master-config.yaml
-          --ignore-preflight-errors=cri
+        - name: Ensure /root/.kube exists
+          file:
+            state: directory
+            path: /root/.kube
 
-    - name: Ensure /root/.kube exists
-      file:
-        state: directory
-        path: /root/.kube
+        - name: Copy kubectl admin config to default location
+          copy:
+            remote_src: yes
+            src: /etc/kubernetes/admin.conf
+            dest: /root/.kube/config
 
-    - name: Copy kubectl admin config to default location
-      copy:
-        remote_src: yes
-        src: /etc/kubernetes/admin.conf
-        dest: /root/.kube/config
+        - name: Install pod network
+          shell: |
+            set -eo pipefail
+            kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 
-    - name: Install pod network
-      shell: |
-        set -eo pipefail
-        kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+        - name: Wait for node to become ready
+          command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_hostname }}
 
-    - name: Wait for node to become ready
-      command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_hostname }}
+        - name: Ensure DNS service has started
+          command: kubectl -n kube-system rollout status deployment coredns
 
-    - name: Ensure DNS service has started
-      command: kubectl -n kube-system rollout status deployment coredns
+        - name: Wait for control plane components to become ready
+          shell: |
+            set -eo pipefail
+            # Wait until there is at least one pod with the correct label
+            until kubectl -n kube-system get pod -l tier=control-plane,component={{ item }} -o json | jq -e '.items|length > 0'
+            do
+              sleep 1
+            done
+            # Then wait for them to go into the ready state
+            kubectl -n kube-system wait --for condition=ready pod -l tier=control-plane,component={{ item }} --timeout -1s
+          with_items:
+            - etcd
+            - kube-apiserver
+            - kube-controller-manager
+            - kube-scheduler
+      when: kube_role == "master"
 
-    - name: Wait for control plane components to become ready
-      shell: |
-        set -eo pipefail
-        # Wait until there is at least one pod with the correct label
-        until kubectl -n kube-system get pod -l tier=control-plane,component={{ item }} -o json | jq -e '.items|length > 0'
-        do
-          sleep 1
-        done
-        # Then wait for them to go into the ready state
-        kubectl -n kube-system wait --for condition=ready pod -l tier=control-plane,component={{ item }} --timeout -1s
-      with_items:
-        - etcd
-        - kube-apiserver
-        - kube-controller-manager
-        - kube-scheduler
-  # If something goes wrong, undo changes and uninstall the Kubernetes packages
+    - name: Configure worker
+      block:
+        - name: Fetch kubeadm token from master
+          shell: |
+            set -eo pipefail
+            kubeadm token list | head -n 2 | tail -n 1 | awk '{ print $1 };'
+          register: kubeadm_token_cmd
+          delegate_to: "{{ kube_master_inventory_hostname }}"
+
+        - name: Set kubeadm_token fact
+          set_fact:
+            kubeadm_token: "{{ kubeadm_token_cmd.stdout }}"
+
+        - name: Write kubeadm worker configuration
+          template:
+            src: "{{ lookup('first_found', try_files) }}"
+            dest: /etc/kubernetes/kubeadm-worker-config.yaml
+          vars:
+            try_files:
+              - "templates/{{ cloud_provider }}/worker-config.yaml"
+              - "templates/default/worker-config.yaml"
+
+        - name: Join Kubernetes cluster
+          command: >
+            kubeadm join
+              --config=/etc/kubernetes/kubeadm-worker-config.yaml
+              --ignore-preflight-errors=cri
+
+        - name: Wait for node to become ready
+          command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_hostname }}
+          delegate_to: "{{ kube_master_inventory_hostname }}"
+      when: kube_role == "worker"
+
   rescue:
-    - name: Reset changes made by kubeadm init
+    - name: Reset changes made by kubeadm
       command: kubeadm reset --force
 
     - name: Uninstall Kubernetes packages
@@ -108,54 +144,6 @@
     - name: Installation aborted
       fail:
         msg: "Task '{{ ansible_failed_task.name }}' failed"
-  when: kube_role == "master"
-
-- name: Configure worker
-  block:
-    - name: Fetch kubeadm token from master
-      shell: |
-        set -eo pipefail
-        kubeadm token list | head -n 2 | tail -n 1 | awk '{ print $1 };'
-      register: kubeadm_token_cmd
-      delegate_to: "{{ kube_master_inventory_hostname }}"
-
-    - name: Set kubeadm_token fact
-      set_fact:
-        kubeadm_token: "{{ kubeadm_token_cmd.stdout }}"
-
-    - name: Write kubeadm worker configuration
-      template:
-        src: "templates/worker-config-{{ cloud_provider | default('default') }}.yaml"
-        dest: /etc/kubernetes/kubeadm-worker-config.yaml
-
-    - name: Join Kubernetes cluster
-      command: >
-        kubeadm join
-          --config=/etc/kubernetes/kubeadm-worker-config.yaml
-          --ignore-preflight-errors=cri
-
-    - name: Wait for node to become ready
-      command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_hostname }}
-      delegate_to: "{{ kube_master_inventory_hostname }}"
-  # If something goes wrong, undo changes and uninstall the Kubernetes packages
-  rescue:
-    - name: Reset changes made by kubeadm join
-      command: kubeadm reset --force
-
-    - name: Uninstall Kubernetes packages
-      yum:
-        name:
-          - "kubelet"
-          - "kubeadm"
-          - "kubectl"
-        state: absent
-
-    # If a rescue block runs successfully, the play continues
-    # We don't want that, so explicitly fail again
-    - name: Installation aborted
-      fail:
-        msg: "Task '{{ ansible_failed_task.name }}' failed"
-  when: kube_role == "worker"
 
 - name: Set installed Kubernetes version fact
   set_fact:

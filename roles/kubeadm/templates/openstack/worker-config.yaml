@@ -1,0 +1,6 @@
+{% extends "../default/worker-config.yaml" %}
+
+{% block kubelet_extra_args %}
+    cloud-provider: openstack
+    cloud-config: /etc/kubernetes/cloud-config
+{% endblock %}
