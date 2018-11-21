@@ -10,4 +10,4 @@ nodeRegistration:
     node-ip: "{{ host_ip }}"
     runtime-cgroups: /systemd/system.slice
     kubelet-cgroups: /systemd/system.slice
-{% block kubelet_extra_args %}{% endblock %}
+{{ kubelet_extra_args | to_nice_yaml(indent=4) }}

@@ -42,12 +42,8 @@
 
         - name: Write kubeadm master configuration
           template:
-            src: "{{ lookup('first_found', try_files) }}"
+            src: templates/master-config.yaml
             dest: /etc/kubernetes/kubeadm-master-config.yaml
-          vars:
-            try_files:
-              - "templates/{{ cloud_provider }}/master-config.yaml"
-              - "templates/default/master-config.yaml"
 
         - name: Initialise Kubernetes master
           command: >
@@ -71,11 +67,11 @@
             set -eo pipefail
             kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 
-        - name: Wait for node to become ready
-          command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_hostname }}
-
         - name: Ensure DNS service has started
           command: kubectl -n kube-system rollout status deployment coredns
+
+        - name: Wait for node to become ready
+          command: kubectl wait --for condition=ready --timeout -1s node {{ ansible_hostname }}
 
         - name: Wait for control plane components to become ready
           shell: |
@@ -109,12 +105,8 @@
 
         - name: Write kubeadm worker configuration
           template:
-            src: "{{ lookup('first_found', try_files) }}"
+            src: templates/worker-config.yaml
             dest: /etc/kubernetes/kubeadm-worker-config.yaml
-          vars:
-            try_files:
-              - "templates/{{ cloud_provider }}/worker-config.yaml"
-              - "templates/default/worker-config.yaml"
 
         - name: Join Kubernetes cluster
           command: >
