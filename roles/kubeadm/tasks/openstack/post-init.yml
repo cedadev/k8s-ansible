@@ -22,4 +22,21 @@
           -out /etc/kubernetes/pki/k8s-keystone-auth.crt
       args:
         creates: /etc/kubernetes/pki/k8s-keystone-auth.crt
+
+    - name: Create Kubernetes secret for TLS keypair
+      shell: |
+        set -eo pipefail
+        kubectl -n kube-system create secret generic k8s-keystone-auth-tls  \
+          --from-file=tls.crt=/etc/kubernetes/pki/k8s-keystone-auth.crt  \
+          --from-file=tls.key=/etc/kubernetes/pki/k8s-keystone-auth.key  \
+          --dry-run -o yaml |  \
+        kubectl apply -f -
+
+    - name: Install k8s-keystone-auth manifest
+      template:
+        src: templates/openstack/k8s-keystone-auth-deployment.yaml
+        dest: /root/manifests/openstack-k8s-keystone-auth-deployment.yaml
+
+    - name: Create/update k8s-keystone-auth deployment
+      command: kubectl apply -f /root/manifests/openstack-k8s-keystone-auth-deployment.yaml
   when: kube_role == "master"

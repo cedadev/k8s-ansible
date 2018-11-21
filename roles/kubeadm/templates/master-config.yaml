@@ -23,6 +23,7 @@ nodeRegistration:
 ---
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
+clusterName: "{{ cluster_name }}"
 # Use the required Kubernetes version
 kubernetesVersion: "{{ kubernetes_version_target }}"
 {% if cluster_config_extra -%}
