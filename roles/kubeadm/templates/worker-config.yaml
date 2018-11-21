@@ -12,4 +12,4 @@ nodeRegistration:
     kubelet-cgroups: /systemd/system.slice
 {% if kubelet_extra_args -%}
 {{ kubelet_extra_args | to_nice_yaml | indent(4, true) }}
-{%- endif %}
+{% endif -%}
