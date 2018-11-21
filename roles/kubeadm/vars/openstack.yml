@@ -7,7 +7,7 @@ kubelet_extra_args:
   cloud-provider: openstack
   cloud-config: /etc/kubernetes/cloud-config
 
-cluster_config:
+cluster_config_extra:
   apiServerExtraArgs:
     cloud-provider: openstack
     cloud-config: /etc/kubernetes/cloud-config

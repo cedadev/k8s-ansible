@@ -1,23 +1,25 @@
 ---
 
-- name: Ensure manifests directory exists
-  file:
-    path: /root/manifests
-    state: directory
+- block:
+    - name: Ensure manifests directory exists
+      file:
+        path: /root/manifests
+        state: directory
 
-- name: Install Cinder storage class manifest
-  template:
-    src: templates/openstack/cinder-storageclass.yaml
-    dest: /root/manifests/openstack-cinder-storageclass.yaml
+    - name: Install Cinder storage class manifest
+      template:
+        src: templates/openstack/cinder-storageclass.yaml
+        dest: /root/manifests/openstack-cinder-storageclass.yaml
 
-- name: Install Cinder storage class
-  command: kubectl apply -f /root/manifests/openstack-cinder-storageclass.yaml
+    - name: Install Cinder storage class
+      command: kubectl apply -f /root/manifests/openstack-cinder-storageclass.yaml
 
-- name: Create TLS keypair for k8s-keystone-auth
-  command: >
-    openssl req -x509 -new -nodes -days 3650
-      -subj "/CN=k8s-keystone-auth"
-      -keyout /etc/kubernetes/pki/k8s-keystone-auth.key
-      -out /etc/kubernetes/pki/k8s-keystone-auth.crt
-  args:
-    creates: /etc/kubernetes/pki/k8s-keystone-auth.crt
+    - name: Create TLS keypair for k8s-keystone-auth
+      command: >
+        openssl req -x509 -new -nodes -days 3650
+          -subj "/CN=k8s-keystone-auth"
+          -keyout /etc/kubernetes/pki/k8s-keystone-auth.key
+          -out /etc/kubernetes/pki/k8s-keystone-auth.crt
+      args:
+        creates: /etc/kubernetes/pki/k8s-keystone-auth.crt
+  when: kube_role == "master"
