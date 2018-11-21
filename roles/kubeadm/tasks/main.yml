@@ -14,15 +14,18 @@
     - inventory_hostname in groups['kube-workers']
 
 # Include cloud provider variables
-- include_vars: "{{ cloud_provider }}.yml"
+- name: Include cloud-provider variables
+  include_vars: "{{ cloud_provider }}.yml"
   when: cloud_provider is defined
 
 # Get the Kubernetes version information
-- include_tasks: version.yml
+- name: Detect Kubernetes version
+  include_tasks: version.yml
 
 # Upgrade existing nodes first
 # We use a trick so that only one host is upgraded at once
-- include_tasks: upgrade.yml
+- name: Upgrade existing nodes
+  include_tasks: upgrade.yml
   when:
     - inventory_hostname == host_item
     - kubernetes_version_installed is defined
@@ -34,9 +37,11 @@
 
 # Then install any new nodes
 # This can be done in parallel
-- include_tasks: install.yml
+- name: Install new nodes
+  include_tasks: install.yml
   when: kubernetes_version_installed is not defined
 
 # The final step is to remove any nodes that are no longer in the inventory
-- include_tasks: remove.yml
+- name: Remove non-existent nodes
+  include_tasks: remove.yml
   when: kube_role == "master"
