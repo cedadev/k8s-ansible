@@ -17,10 +17,14 @@ nodeRegistration:
     node-ip: "{{ host_ip }}"
     runtime-cgroups: /systemd/system.slice
     kubelet-cgroups: /systemd/system.slice
+{% if kubelet_extra_args -%}
 {{ kubelet_extra_args | to_nice_yaml(indent=4) }}
+{%- endif %}
 ---
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
 # Use the required Kubernetes version
 kubernetesVersion: "{{ kubernetes_version_target }}"
+{% if cluster_config_extra -%}
 {{ cluster_config_extra | to_nice_yaml }}
+{%- endif %}
