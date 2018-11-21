@@ -1,0 +1,24 @@
+---
+
+cloud_provider_pre_init_tasks: openstack/pre-init.yml
+cloud_provider_post_init_tasks: openstack/post-init.yml
+
+kubelet_extra_args:
+  cloud-provider: openstack
+  cloud-config: /etc/kubernetes/cloud-config
+
+cluster_config:
+  apiServerExtraArgs:
+    cloud-provider: openstack
+    cloud-config: /etc/kubernetes/cloud-config
+  apiServerExtraVolumes:
+    - name: cloud
+      hostPath: /etc/kubernetes/cloud-config
+      mountPath: /etc/kubernetes/cloud-config
+  controllerManagerExtraArgs:
+    cloud-provider: openstack
+    cloud-config: /etc/kubernetes/cloud-config
+  controllerManagerExtraVolumes:
+    - name: cloud
+      hostPath: /etc/kubernetes/cloud-config
+      mountPath: /etc/kubernetes/cloud-config

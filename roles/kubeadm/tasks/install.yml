@@ -27,6 +27,10 @@
     state: started
     enabled: yes
 
+- name: Run cloud provider pre-init tasks
+  include_tasks: "{{ cloud_provider_pre_init_tasks }}"
+  when: cloud_provider_pre_init_tasks is defined
+
 # This outer block allows us to roll back the Kubernetes initialisation if it goes wrong
 - block:
     # Configure the master first
@@ -136,6 +140,10 @@
     - name: Installation aborted
       fail:
         msg: "Task '{{ ansible_failed_task.name }}' failed"
+
+- name: Run cloud provider post-init tasks
+  include_tasks: "{{ cloud_provider_post_init_tasks }}"
+  when: cloud_provider_post_init_tasks is defined
 
 - name: Set installed Kubernetes version fact
   set_fact:

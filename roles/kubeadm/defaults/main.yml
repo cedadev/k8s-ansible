@@ -31,3 +31,10 @@ upgrade_kubernetes: no
 # Defaults for config templates
 kubelet_extra_args: {}
 cluster_config_extra: {}
+
+# By default, take the OpenStack variables from the environment vars
+openstack_auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
+openstack_domain_name: "{{ lookup('env', 'OS_DOMAIN_NAME') }}"
+openstack_project_id: "{{ lookup('env', 'OS_PROJECT_ID') }}"
+openstack_username: "{{ lookup('env', 'OS_USERNAME') }}"
+openstack_password: "{{ lookup('env', 'OS_PASSWORD') }}"

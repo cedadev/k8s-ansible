@@ -1,0 +1,7 @@
+---
+
+- name: Install OpenStack cloud configuration
+  template:
+    src: templates/openstack/cloud-config
+    dest: /etc/kubernetes/cloud-config
+    mode: "u=rw,g=,o="

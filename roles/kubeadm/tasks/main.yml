@@ -13,6 +13,10 @@
     - inventory_hostname in groups['kube-masters']
     - inventory_hostname in groups['kube-workers']
 
+# Include cloud provider variables
+- include_vars: "{{ cloud_provider }}.yml"
+  when: cloud_provider is defined
+
 # Get the Kubernetes version information
 - include_tasks: version.yml
 
