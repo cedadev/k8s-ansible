@@ -42,4 +42,16 @@
 
     - name: Ensure k8s-keystone-auth rolls out successfully
       command: kubectl -n kube-system rollout status deployment k8s-keystone-auth
+
+    # Kubernetes apiserver doesn't support cluster DNS, so replace the DNS name with
+    # the allocated ClusterIP for the service
+    - name: Get ClusterIP for k8s-keystone-auth
+      command: kubectl -n kube-system get svc k8s-keystone-auth -o jsonpath='{.spec.clusterIP}'
+      register: k8s_keystone_auth_ip
+
+    - name: Patch k8s-keystone-auth webhook config with ClusterIP
+      replace:
+        path: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
+        regexp: "k8s-keystone-auth\.kube-system"
+        replace: "{{ k8s_keystone_auth_ip.stdout }}"
   when: kube_role == "master"
