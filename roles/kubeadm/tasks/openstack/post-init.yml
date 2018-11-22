@@ -52,6 +52,6 @@
     - name: Patch k8s-keystone-auth webhook config with ClusterIP
       replace:
         path: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
-        regexp: "k8s-keystone-auth\.kube-system"
+        regexp: 'k8s-keystone-auth\.kube-system'
         replace: "{{ k8s_keystone_auth_ip.stdout }}"
   when: kube_role == "master"
