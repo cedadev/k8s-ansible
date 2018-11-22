@@ -39,4 +39,7 @@
 
     - name: Create/update k8s-keystone-auth deployment
       command: kubectl apply -f /root/manifests/openstack-k8s-keystone-auth-deployment.yaml
+
+    - name: Ensure k8s-keystone-auth rolls out successfully
+      command: kubectl -n kube-system rollout status deployment k8s-keystone-auth
   when: kube_role == "master"

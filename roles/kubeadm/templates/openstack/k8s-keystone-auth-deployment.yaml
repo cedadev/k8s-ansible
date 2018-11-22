@@ -1,5 +1,25 @@
-kind: Service
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8s-keystone-auth
+  namespace: kube-system
+---
+# For now, grant cluster-admin to the service account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: k8s-keystone-auth-cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: k8s-keystone-auth
+    namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+---
+apiVersion: v1
+kind: Service
 metadata:
   name: k8s-keystone-auth
   namespace: kube-system
@@ -30,6 +50,7 @@ spec:
       labels:
         app: k8s-keystone-auth
     spec:
+      serviceAccountName: k8s-keystone-auth
       containers:
         - name: k8s-keystone-auth
           image: k8scloudprovider/k8s-keystone-auth:latest
