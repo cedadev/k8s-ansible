@@ -5,3 +5,8 @@
     src: templates/openstack/cloud-config
     dest: /etc/kubernetes/cloud-config
     mode: "u=rw,g=,o="
+
+- name: Install k8s-keystone-auth webhook configuration
+  template:
+    src: templates/openstack/k8s-keystone-auth-webhook-config.yaml
+    dest: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
