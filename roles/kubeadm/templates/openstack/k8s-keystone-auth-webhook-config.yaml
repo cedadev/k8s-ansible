@@ -4,7 +4,7 @@ preferences: {}
 clusters:
   - cluster:
       insecure-skip-tls-verify: true
-      server: https://k8s-keystone-auth.kube-system:8443/webhook
+      server: https://{{ k8s_keystone_auth_cluster_ip }}:8443/webhook
     name: webhook
 users:
   - name: webhook

@@ -43,15 +43,32 @@
     - name: Ensure k8s-keystone-auth rolls out successfully
       command: kubectl -n kube-system rollout status deployment k8s-keystone-auth
 
-    # Kubernetes apiserver doesn't support cluster DNS, so replace the DNS name with
-    # the allocated ClusterIP for the service
-    - name: Get ClusterIP for k8s-keystone-auth
+    # Kubernetes apiserver doesn't support cluster DNS, so we have to create the file here
+    # and patch the running API server
+    - name: Get cluster IP for k8s-keystone-auth
       command: kubectl -n kube-system get svc k8s-keystone-auth -o jsonpath='{.spec.clusterIP}'
-      register: k8s_keystone_auth_ip
+      register: k8s_keystone_auth_cluster_ip_cmd
 
-    - name: Patch k8s-keystone-auth webhook config with ClusterIP
-      replace:
-        path: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
-        regexp: 'k8s-keystone-auth\.kube-system'
-        replace: "{{ k8s_keystone_auth_ip.stdout }}"
+    - name: Set k8s-keystone-auth cluster IP fact
+      set_fact:
+        k8s_keystone_auth_cluster_ip: "{{ k8s_keystone_auth_cluster_ip_cmd.stdout }}"
+
+    - name: Install k8s-keystone-auth webhook configuration
+      template:
+        src: templates/openstack/k8s-keystone-auth-webhook-config.yaml
+        dest: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
+
+    - name: Patch apiserver pod manifest
+      shell:
+        set -eo pipefail
+        if ! grep "authentication-token-webhook-config-file" /etc/kubernetes/manifests/kube-apiserver.yaml; then
+          cat /etc/kubernetes/manifests/kube-apiserver.yaml
+        fi
+
+    - name: Wait for apiserver to restart
+      command: kubectl version --request-timeout=1s
+      register: api_server_available
+      until: api_server_available is succeeded
+      retries: 60
+      delay: 5
   when: kube_role == "master"
