@@ -1,5 +1,9 @@
 ---
 
+- name: Run cloud provider pre-upgrade tasks
+  include_tasks: "{{ cloud_provider_pre_upgrade_tasks }}"
+  when: cloud_provider_pre_upgrade_tasks is defined
+
 - name: Upgrade kubeadm and kubectl
   yum:
     name:
@@ -42,19 +46,13 @@
 - name: Reload systemd daemon
   systemd:
     daemon_reload: yes
+  when: kubelet_upgraded is changed
 
 - name: Upgrade kubelet config
   command: kubeadm upgrade node config --kubelet-version v{{ kubernetes_version_target }}
   when:
     - kube_role == "worker"
     - kubelet_upgraded is changed
-
-- name: Override kubelet arguments
-  copy:
-    dest: /etc/sysconfig/kubelet
-    content: |
-      KUBELET_EXTRA_ARGS="{{ kubelet_extra_args }}"
-  when: kubelet_upgraded is changed
 
 - name: Restart docker and kubelet
   service:
@@ -65,17 +63,21 @@
     - kubelet
   when: kubelet_upgraded is changed
 
-- name: Wait for API server to become available after restart (max 5 mins)
-  command: kubectl version --request-timeout=1s
-  register: api_server_available
-  until: api_server_available is succeeded
+- name: Wait for reported kubelet version from API server to match target version
+  command: kubectl --request-timeout=1s get nodes {{ ansible_hostname }} -o jsonpath='{.status.nodeInfo.kubeletVersion}'
+  delegate_to: "{{ kube_master_inventory_hostname }}"
+  register: api_server_kubelet_version
+  until: "api_server_kubelet_version is succeeded and api_server_kubelet_version.stdout[1:] == kubernetes_version_target"
   retries: 60
   delay: 5
-  when: kube_role == "master"
 
 - name: Uncordon host
   command: kubectl uncordon {{ ansible_hostname }}
   delegate_to: "{{ kube_master_inventory_hostname }}"
+
+- name: Run cloud provider post-upgrade tasks
+  include_tasks: "{{ cloud_provider_post_upgrade_tasks }}"
+  when: cloud_provider_post_upgrade_tasks is defined
 
 - name: Set installed Kubernetes version fact
   set_fact:

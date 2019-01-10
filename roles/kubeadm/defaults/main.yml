@@ -1,5 +1,5 @@
 # The default Kubernetes version
-kubernetes_version: "1.12"
+kubernetes_version: "1.13"
 
 # By default, use the default interface for cluster communication
 cluster_interface: "{{ ansible_default_ipv4.interface }}"

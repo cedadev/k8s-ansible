@@ -2,6 +2,7 @@
 
 cloud_provider_pre_init_tasks: openstack/pre-init.yml
 cloud_provider_post_init_tasks: openstack/post-init.yml
+cloud_provider_post_upgrade_tasks: openstack/post-init.yml
 
 kubelet_extra_args:
   cloud-provider: openstack
