@@ -43,13 +43,13 @@
     - name: Ensure k8s-keystone-auth rolls out successfully
       command: kubectl -n kube-system rollout status deployment k8s-keystone-auth
 
-    # Kubernetes apiserver doesn't support cluster DNS, so we have to create the file here
-    # and patch the running API server
+    # Kubernetes apiserver doesn't support cluster DNS, so we have to update the webhook config
+    # and restart the running API server
     - name: Get cluster IP for k8s-keystone-auth
       command: kubectl -n kube-system get svc k8s-keystone-auth -o jsonpath='{.spec.clusterIP}'
       register: k8s_keystone_auth_cluster_ip_cmd
 
-    - name: Set k8s-keystone-auth cluster IP fact
+    - name: Set k8s_keystone_auth_cluster_ip fact
       set_fact:
         k8s_keystone_auth_cluster_ip: "{{ k8s_keystone_auth_cluster_ip_cmd.stdout }}"
 
@@ -57,18 +57,30 @@
       template:
         src: templates/openstack/k8s-keystone-auth-webhook-config.yaml
         dest: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
+      register: k8s_keystone_auth_webhook_config
 
-    - name: Patch apiserver pod manifest
-      shell:
-        set -eo pipefail
-        if ! grep "authentication-token-webhook-config-file" /etc/kubernetes/manifests/kube-apiserver.yaml; then
-          cat /etc/kubernetes/manifests/kube-apiserver.yaml
-        fi
+    # Force the API server to restart by adding or updating a meaningless annotation
+    # in the manifest whenever the config changes
+    - name: Force API server restart
+      lineinfile:
+        path: /etc/kubernetes/manifests/kube-apiserver.yaml
+        line: '    "jasmin/authn-webhook-ready": "{{ ''{:0>10d}''.format(10000000000 | random) }}"'
+        regexp: 'jasmin/authn-webhook-ready'
+        insertafter: 'annotations:'
+      when: k8s_keystone_auth_webhook_config is changed
 
-    - name: Wait for apiserver to restart
+    - name: Wait for apiserver to become available
       command: kubectl version --request-timeout=1s
       register: api_server_available
       until: api_server_available is succeeded
       retries: 60
       delay: 5
+
+    - name: Grant cluster-admin role to tenancy users
+      shell: |
+        set -eo pipefail
+        kubectl create clusterrolebinding openstack-admins \
+            --clusterrole cluster-admin --group "{{ openstack_project_id }}" \
+            --dry-run -o yaml | \
+          kubectl apply -f -
   when: kube_role == "master"

@@ -1,7 +1,28 @@
 ---
 
+- name: Check OpenStack variables are set
+  fail:
+    msg: "Variable '{{ item }}' must be set, either directly or via the standard OpenStack environment variables"
+  when: "not lookup('vars', item)"
+  with_items:
+    - openstack_auth_url
+    - openstack_domain_name
+    - openstack_project_id
+    - openstack_username
+    - openstack_password
+
 - name: Install OpenStack cloud configuration
   template:
     src: templates/openstack/cloud-config
     dest: /etc/kubernetes/cloud-config
     mode: "u=rw,g=,o="
+
+# The Kubernetes apiserver doesn't support cluster DNS, so we have to give the
+# clusterIP of the k8s-keystone-auth service - however, it doesn't exist yet
+# So specify a dummy file here and then replace it later with the real one
+- name: Install dummy k8s-keystone-auth webhook configuration
+  template:
+    src: templates/openstack/k8s-keystone-auth-webhook-config.yaml
+    dest: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
+  vars:
+    k8s_keystone_auth_cluster_ip: k8s-keystone-auth

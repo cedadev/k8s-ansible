@@ -5,7 +5,7 @@
 #####
 
 # Do cluster setup for all hosts
-- hosts: cluster
+- hosts: kube-masters,kube-workers
   remote_user: root
   roles:
     - kubeadm
