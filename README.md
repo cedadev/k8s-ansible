@@ -1,9 +1,8 @@
 # k8s-ansible
 
 This project aims to provide a simple [Ansible](https://www.ansible.com/) playbook to
-provision a [Kubernetes](https://kubernetes.io) cluster.
-
-It uses the [kubeadm tool](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/)
+provision a [Kubernetes](https://kubernetes.io) cluster. It uses the
+[kubeadm tool](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/)
 to set up a secure cluster.
 
 The [Helm package manager](https://helm.sh/) is deployed into the cluster.
@@ -11,38 +10,13 @@ The [Helm package manager](https://helm.sh/) is deployed into the cluster.
 The [Nginx ingress controller](https://github.com/kubernetes/ingress/tree/master/controllers/nginx)
 is also deployed to provide [Ingress resources](https://kubernetes.io/docs/concepts/services-networking/ingress/).
 
+The playbook also aims to provide hooks for the integration of cloud providers. Currently, only
+hooks for [OpenStack](https://www.openstack.org/) are implemented. The OpenStack integration
+currently provides the following:
 
-## Deploying the test cluster
-
-The test cluster is deployed using [Vagrant](https://www.vagrantup.com/) and
-[VirtualBox](https://www.virtualbox.org/), so make sure you have recent versions
-of both installed.
-
-Dynamic storage is provided by a [StorageClass](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#storageclasses)
-provided by [rook](https://rook.io/), a project to make deploying containerised [Ceph](http://ceph.com/) easy.
-
-By default the Kubernetes cluster consists of a master and 2 workers. The number
-of workers can be increased by changing `N_WORKERS` at the top of the `Vagrantfile`.
-
-To provision the test cluster, just run `vagrant up`.
-
-To access `kubectl` on the master, just use:
-
-```
-$ vagrant ssh kube-master -- -l root
-[root@kube-master ~]# kubectl ...
-```
-
-Alternatively, you can install `kubectl` on your host system. To do this, we need to pull
-the config file from the `kube-master`:
-
-```
-$ SSHCONFIG="$(mktemp)"
-$ vagrant ssh-config kube-master > $SSHCONFIG
-$ scp -F $SSHCONFIG root@kube-master:/etc/kubernetes/admin.conf /path/to/kubeconfig.conf
-$ export KUBECONFIG=/path/to/kubeconfig.conf
-$ kubectl ...
-```
-
-This method is particularly useful for accessing the API server and any installed dashboards
-using [kubectl proxy](https://kubernetes.io/docs/tasks/access-kubernetes-api/http-proxy-access-api/).
+  * Kubernetes pulls machine info from Nova metadata.
+  * A default `StorageClass` is installed, called `standard`, that provisions Cinder volumes on demand.
+  * Kubernetes is configured to call out to Keystone to authenticate tokens using
+    [k8s-keystone-auth](https://github.com/kubernetes/cloud-provider-openstack/blob/master/docs/using-keystone-webhook-authenticator-and-authorizer.md).
+    A `ClusterRoleBinding` is installed that grants the `cluster-admin` role to all members of the OpenStack project in which the cluster is deployed.
+    The `k8s-keystone-auth` project also provides a client that integrates with `kubectl` to provide OpenStack authentication.
