@@ -63,6 +63,7 @@ Vagrant.configure(2) do |config|
             "kube-workers" => (1..N_WORKERS).map { |n| "kube-worker%d" % n },
           }
           ansible.extra_vars = {
+            "cluster_name" => "vagrant",
             "cluster_interface" => "eth1",
           }
         end
