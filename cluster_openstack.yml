@@ -24,7 +24,6 @@
   roles:
     - role: jasmin.cluster-infra
       vars:
-        cluster_groups:
           - "{{ masters_group }}"
           - "{{ workers_group }}"
 
