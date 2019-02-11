@@ -3,4 +3,4 @@
 - name: jasmin.cluster-infra
   scm: git
   src: https://github.com/cedadev/jasmin-cluster-infra-ansible.git
-  version: ukri-demo
+  version: 83083c5e658a0cb934872ce0d3fb04fa1df6458d
