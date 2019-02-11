@@ -9,7 +9,7 @@
   - name: Set openstack_project_id as fact
     set_fact:
       openstack_project_id: result.stdout_lines[0]
-  when: not lookup('vars', openstack_project_id)
+  when: not lookup('vars', 'openstack_project_id')
 
 - block:
   - name: Get openstack_user_id when not defined
@@ -21,7 +21,7 @@
   - name: Set openstack_user_id as fact
     set_fact:
       openstack_user_id: result.stdout_lines[0]
-  when: not lookup('vars', openstack_user_id)
+  when: not lookup('vars', 'openstack_user_id')
 
 - block:
   - name: Get openstack_trust_id
@@ -33,7 +33,7 @@
   - name: Set openstack_trust_id as fact
     set_fact:
       openstack_trust_id: result.stdout_lines[0]
-  when: not lookup('vars', openstack_user_id)
+  when: not lookup('vars', 'openstack_user_id')
 
 - name: Check OpenStack variables are set
   fail:
