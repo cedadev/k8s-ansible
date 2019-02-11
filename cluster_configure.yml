@@ -9,6 +9,7 @@
   remote_user: root
   roles:
     - kubeadm
+  become: yes
 
 # Install addons via the master
 - hosts: kube-masters
@@ -17,3 +18,4 @@
     - helm
     - ingress_nginx
     - kubernetes_dashboard
+  become: yes

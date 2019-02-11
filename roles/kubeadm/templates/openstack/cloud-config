@@ -1,9 +1,12 @@
 [Global]
 auth-url={{ openstack_auth_url }}
+username={{ openstack_trustee_username | default(openstack_username) }}
+password={{ openstack_trustee_password | default(openstack_password) }}
+{% if openstack_trust_id is not none %}
+trust-id={{ openstack_trust_id }}
+{% else %}
 domain-name={{ openstack_domain_name }}
 tenant-id={{ openstack_project_id }}
-username={{ openstack_username }}
-password={{ openstack_password }}
-
+{% endif %}
 [BlockStorage]
 bs-version=v2

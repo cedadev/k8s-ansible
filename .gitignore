@@ -1,6 +1,7 @@
 .vagrant
 *.retry
 .dockerhub-credentials.yml
+secret.yml
 venv
 .artifacts
 .python-version
