@@ -10,6 +10,7 @@
     - role: jasmin.cluster-infra
       vars:
         cluster_gw_group: kube-masters
+        cluster_deploy_user: root
         cluster_groups:
           - name: kube-masters
             user: root
