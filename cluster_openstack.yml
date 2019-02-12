@@ -6,6 +6,9 @@
 
 # Provision infrastructure with the correct groups using the jasmin.cluster-infra role
 - hosts: openstack
+  pre_tasks:
+    - name: Update galaxy roles
+      command: ansible-galaxy install -f -r {{ playbook_dir }}/roles/requirements.yml
   roles:
     - role: jasmin.cluster-infra
       vars:
