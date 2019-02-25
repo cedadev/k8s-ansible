@@ -1,44 +1,8 @@
 ---
-- block:
-  - name: Get openstack_project_id when not defined
-    command: "openstack project show {{ openstack_project_name }} -f value -c id"
-    register: result
-    failed_when:
-      - result.stderr != ""
-      - result.stdout_lines | length == 1
-  - name: Set openstack_project_id as fact
-    set_fact:
-      openstack_project_id: result.stdout_lines[0]
-  when: not lookup('vars', 'openstack_project_id')
-
-- block:
-  - name: Get openstack_user_id when not defined
-    command: "openstack token issue -c user_id -f value"
-    register: result
-    failed_when:
-      - result.stderr != ""
-      - result.stdout_lines | length == 1
-  - name: Set openstack_user_id as fact
-    set_fact:
-      openstack_user_id: result.stdout_lines[0]
-  when: not lookup('vars', 'openstack_user_id')
-
-- block:
-  - name: Get openstack_trust_id
-    command: "openstack trust create {{ openstack_user_id }} {{ openstack_trustee_id }} --project {{ openstack_project_id }} --role={{ openstack_role_id }} -c id -f value"
-    register: result
-    failed_when:
-      - result.stderr != ""
-      - result.stdout_lines | length == 1
-  - name: Set openstack_trust_id as fact
-    set_fact:
-      openstack_trust_id: result.stdout_lines[0]
-  when: not lookup('vars', 'openstack_user_id')
-
 - name: Check OpenStack variables are set
   fail:
     msg: "Variable '{{ item }}' must be set, either directly or via the standard OpenStack environment variables"
-  when: "not lookup('vars', item)"
+  when: not lookup('vars', item)
   with_items:
     - openstack_auth_url
     - openstack_trust_id

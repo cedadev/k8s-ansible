@@ -20,3 +20,30 @@ currently provides the following:
     [k8s-keystone-auth](https://github.com/kubernetes/cloud-provider-openstack/blob/master/docs/using-keystone-webhook-authenticator-and-authorizer.md).
     A `ClusterRoleBinding` is installed that grants the `cluster-admin` role to all members of the OpenStack project in which the cluster is deployed.
     The `k8s-keystone-auth` project also provides a client that integrates with `kubectl` to provide OpenStack authentication.
+
+# Deployment
+
+    ansible-playbook cluster_openstack.yml -i inventory -e @config.yml
+
+Where `config.yml` reads:
+
+    ---
+    cluster_name: kubernetes
+    cluster_network: caastest-U-internal
+    cluster_keypair: brtknr-33236e18e6285585a7f58f1006f88349
+    cluster_gw_group: kube-masters
+    cluster_master_flavor: j3.medium
+    cluster_master_nodes: 1
+    cluster_worker_flavor: j3.medium
+    cluster_worker_nodes: 1
+    cluster_deploy_user: centos
+    cluster_image: centos-7-20190104
+    cluster_nodenet_fips:
+      - uuid: fbd8781c-0917-41a3-8a66-ecaf0f05826a
+	ip: 192.171.139.250
+    openstack_trustee_id: f8d4001b4e33ecdb24a11f3de1a9102275b3b39e7f1b3bad4caf33775d3f8c0
+    openstack_trustee_username: caasctl
+    openstack_trustee_password: 'secretnomore'
+    openstack_role_id: 9fe2ff9ee4384b1894a90878d3e92bab
+    openstack_project: 43d4c99f76d443a5a17b192e08fb2e30
+    ...

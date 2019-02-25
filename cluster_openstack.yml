@@ -9,6 +9,40 @@
   tasks:
     - set_fact:
         cluster_name_bastion: "{{ cluster_name }}-bastion"
+    - block:
+      - name: Get openstack_project_id when not defined
+        command: "openstack project show {{ lookup('env', 'OS_PROJECT_NAME') }} -f value -c id"
+        register: result
+        when: not lookup('env', 'OS_PROJECT_ID')
+      - debug: var=result
+        #failed_when:
+        #  - result.stderr is defined
+        #  - result.stdout_lines | length == 1
+      - name: Set openstack_project_id as fact
+        set_fact:
+          openstack_project_id: "{{ result.stdout_lines[0] | default(lookup('env', 'OS_PROJECT_ID')) }}"
+    - block:
+      - name: Get openstack_user_id when not defined
+        command: "openstack token issue -c user_id -f value"
+        register: result
+        failed_when:
+          - result.stderr_lines | length > 0
+          - result.stdout_lines | length != 1
+        when: not lookup('env', 'OS_USER_ID')
+      - name: Set openstack_user_id as fact
+        set_fact:
+          openstack_user_id: "{{ result.stdout_lines[0] | default(lookup('env', 'OS_USER_ID')) }}"
+    - block:
+      - name: Get openstack_trust_id
+        command: "openstack trust create {{ openstack_user_id }} {{ openstack_trustee_id }} --project {{ openstack_project_id }} --role={{ openstack_role_id }} -c id -f value"
+        register: result
+        failed_when:
+          - result.stderr_lines | length > 0
+          - result.stdout_lines | length != 1
+        when: not lookup('env', 'OS_TRUST_ID')
+      - name: Set openstack_trust_id as fact
+        set_fact:
+          openstack_trust_id: "{{ result.stdout_lines[0] | default(lookup('env', 'OS_TRUST_ID')) }}"
 
 # Provision a separate stack for the bastion
 - hosts: openstack
@@ -24,6 +58,7 @@
   roles:
     - role: jasmin.cluster-infra
       vars:
+        cluster_groups:
           - "{{ masters_group }}"
           - "{{ workers_group }}"
 
@@ -31,6 +66,9 @@
 - import_playbook: cluster_configure.yml
   vars:
     cloud_provider: openstack
+    openstack_trust_id: "{{ hostvars['openstack']['openstack_trust_id'] }}"
+    openstack_user_id: "{{ hostvars['openstack']['openstack_user_id'] }}"
+    openstack_project_id: "{{ hostvars['openstack']['openstack_project_id'] }}"
 
 # Delete the bastion
 - hosts: openstack

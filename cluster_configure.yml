@@ -6,15 +6,14 @@
 
 # Do cluster setup for all hosts
 - hosts: kube-masters,kube-workers
-  remote_user: root
+  #remote_user: root
   roles:
-    - firewall
     - kubeadm
   become: yes
 
 # Install addons via the master
 - hosts: kube-masters
-  remote_user: root
+  #remote_user: root
   roles:
     - helm
     - ingress_nginx
