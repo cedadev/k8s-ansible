@@ -65,7 +65,7 @@
 # Do the configuration
 - import_playbook: cluster_configure.yml
   vars:
-    cloud_provider: openstack
+    cloud_provider: external
     openstack_trust_id: "{{ hostvars['openstack']['openstack_trust_id'] }}"
     openstack_user_id: "{{ hostvars['openstack']['openstack_user_id'] }}"
     openstack_project_id: "{{ hostvars['openstack']['openstack_project_id'] }}"
