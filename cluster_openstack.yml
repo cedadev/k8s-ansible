@@ -4,6 +4,7 @@
 ## cluster on OpenStack
 #####
 
+# Setting this in a separate play is the only way to avoid a recursive templating error
 - hosts: openstack
   tasks:
     - set_fact:
