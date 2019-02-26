@@ -2,5 +2,5 @@
 
 - name: jasmin.cluster-infra
   scm: git
-  src: https://github.com/stackhpc/jasmin-cluster-infra-ansible.git
-  version: issue-23
+  src: https://github.com/cedadev/jasmin-cluster-infra-ansible.git
+  version: stack-update-only
