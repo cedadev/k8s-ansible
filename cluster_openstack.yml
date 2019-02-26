@@ -4,13 +4,26 @@
 ## cluster on OpenStack
 #####
 
-# Provision infrastructure
+- hosts: openstack
+  tasks:
+    - set_fact:
+        cluster_name_bastion: "{{ cluster_name }}-bastion"
+
+# Provision a separate stack for the bastion
+- hosts: openstack
+  roles:
+    - role: jasmin.cluster-infra
+      vars:
+        cluster_name: "{{ cluster_name_bastion }}"
+        cluster_groups:
+          - "{{ bastion_group }}"
+
+# Provision the cluster infrastructure
 - hosts: openstack
   roles:
     - role: jasmin.cluster-infra
       vars:
         cluster_groups:
-          - "{{ bastion_group }}"
           - "{{ masters_group }}"
           - "{{ workers_group }}"
 
@@ -19,13 +32,12 @@
   vars:
     cloud_provider: openstack
 
-# Scale the bastion group down to zero hosts
+# Delete the bastion
 - hosts: openstack
   roles:
     - role: jasmin.cluster-infra
       vars:
-        stack_update_only: true
+        cluster_name: "{{ cluster_name_bastion }}"
         cluster_groups:
-          - "{{ bastion_group | combine({ 'num_nodes': 0 }) }}"
-          - "{{ masters_group }}"
-          - "{{ workers_group }}"
+          - "{{ bastion_group }}"
+        cluster_state: absent
