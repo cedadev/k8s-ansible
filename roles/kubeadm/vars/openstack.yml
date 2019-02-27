@@ -18,11 +18,9 @@ cluster_config_extra:
     - name: cloud-config
       hostPath: /etc/kubernetes/cloud-config
       mountPath: /etc/kubernetes/cloud-config
-      readOnly: true
     - name: k8s-keystone-auth-webhook-config
       hostPath: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
       mountPath: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
-      readOnly: true
   controllerManagerExtraArgs:
     cloud-provider: openstack
     cloud-config: /etc/kubernetes/cloud-config
@@ -30,4 +28,3 @@ cluster_config_extra:
     - name: cloud-config
       hostPath: /etc/kubernetes/cloud-config
       mountPath: /etc/kubernetes/cloud-config
-      readOnly: true
