@@ -6,9 +6,10 @@
         command: "openstack project show {{ lookup('env', 'OS_PROJECT_NAME') }} -f value -c id"
         register: result
         when: not lookup('env', 'OS_PROJECT_ID')
-        failed_when:
-          - result.stderr_lines | length > 0
-          - result.stdout_lines | length == 1
+      - debug: var=result
+        #failed_when:
+        #  - result.stderr_lines | length > 0
+        #  - result.stdout_lines | length == 1
       - name: Set openstack_project_id as fact
         set_fact:
           openstack_project_id: "{{ result.stdout_lines[0] | default(lookup('env', 'OS_PROJECT_ID')) }}"
