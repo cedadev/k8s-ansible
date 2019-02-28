@@ -33,9 +33,9 @@
   vars:
     cluster_name: "{{ cluster_name_k8s }}"
     cloud_provider: openstack
-    openstack_trust_id: "{{ groupvars['openstack']['openstack_trust_id'] }}"
-    openstack_user_id: "{{ groupvars['openstack']['openstack_user_id'] }}"
-    openstack_project_id: "{{ groupvars['openstack']['openstack_project_id'] }}"
+    openstack_trust_id: "{{ hostvars['localhost']['openstack_trust_id'] }}"
+    openstack_user_id: "{{ hostvars['localhost']['openstack_user_id'] }}"
+    openstack_project_id: "{{ hostvars['localhost']['openstack_project_id'] }}"
   when: cluster_state | lower == 'present'
 
 # Delete the bastion
