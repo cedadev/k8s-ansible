@@ -7,9 +7,11 @@
         register: result
         when: not lookup('env', 'OS_PROJECT_ID')
       - debug: var=result
-        #failed_when:
-        #  - result.stderr_lines | length > 0
-        #  - result.stdout_lines | length == 1
+        failed_when:
+          - result.stderr is not defined
+          - result.stdout is not defined
+          - result.stderr_lines | length > 0
+          - result.stdout_lines | length == 1
       - name: Set openstack_project_id as fact
         set_fact:
           openstack_project_id: "{{ result.stdout_lines[0] | default(lookup('env', 'OS_PROJECT_ID')) }}"
@@ -19,6 +21,8 @@
         command: "openstack token issue -c user_id -f value"
         register: result
         failed_when:
+          - result.stderr is not defined
+          - result.stdout is not defined
           - result.stderr_lines | length > 0
           - result.stdout_lines | length != 1
         when: not lookup('env', 'OS_USER_ID')
@@ -31,6 +35,8 @@
         command: "openstack trust create {{ openstack_user_id }} {{ openstack_trustee_id }} --project {{ openstack_project_id }} --role={{ openstack_role_id }} -c id -f value"
         register: result
         failed_when:
+          - result.stderr is not defined
+          - result.stdout is not defined
           - result.stderr_lines | length > 0
           - result.stdout_lines | length != 1
         when: not lookup('env', 'OS_TRUST_ID')
@@ -38,4 +44,6 @@
         set_fact:
           openstack_trust_id: "{{ result.stdout_lines[0] | default(lookup('env', 'OS_TRUST_ID')) }}"
       when: openstack_trust_id is not defined
+    - debug: var=groupvars
+    - debug: var=hostvars
 ...
