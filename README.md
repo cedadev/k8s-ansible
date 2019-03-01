@@ -29,6 +29,7 @@ Where `config.yml` reads:
 
     ---
     cluster_name_k8s: kubernetes
+    cluster_state_k8s: present
     cluster_network: caastest-U-internal
     cluster_keypair: brtknr-33236e18e6285585a7f58f1006f88349
     cluster_num_masters: 1
@@ -36,10 +37,7 @@ Where `config.yml` reads:
     cluster_fip_uuid: 8723c186-d15f-44d5-9421-e12bf2a03325
     cluster_fip_ip: 192.171.139.249
 
-    openstack_trust_id: c00cc4b4bfd94563a14c479db3760714
     openstack_trustee_id: f8d4001b4e33ecdb24a11f3de1a9102275b3b39e7f1b3bad4caf33775d3f8c09
     openstack_trustee_username: caasctl
     openstack_trustee_password: 'secretnomore'
-    openstack_role_id: 9fe2ff9ee4384b1894a90878d3e92bab
-    openstack_project: 43d4c99f76d443a5a17b192e08fb2e30
     ...

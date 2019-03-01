@@ -7,7 +7,7 @@
             trustee_user_id: "{{ openstack_trustee_id }}"
             impersonation: true
             roles:
-              - name: "{{ openstack_role }}"
+              - name: "{{ cluster_delegate_role }}"
         - name: Set openstack_project_id, openstack_user_id and opestack_trust_id as fact
           set_fact:
             openstack_project_id: "{{ project_id | default(lookup('env', 'OS_PROJECT_ID')) }}"
