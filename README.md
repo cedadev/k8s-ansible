@@ -28,8 +28,8 @@ currently provides the following:
 Where `config.yml` reads:
 
     ---
-    cluster_name_k8s: kubernetes
-    cluster_state_k8s: present
+    cluster_k8s_name: kubernetes
+    cluster_k8s_state: present
     cluster_network: caastest-U-internal
     cluster_keypair: brtknr-33236e18e6285585a7f58f1006f88349
     cluster_num_masters: 1
