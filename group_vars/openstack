@@ -2,7 +2,7 @@
 cluster_gw_group: gw
 cluster_deploy_user: centos
 cluster_name_bastion: "{{ cluster_name_k8s }}-bastion"
-cluster_state: present
+cluster_state_k8s: present
 
 bastion_group:
   name: "{{ cluster_gw_group }}"

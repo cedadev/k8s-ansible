@@ -6,7 +6,7 @@
 
 # Setting this in a separate play is the only way to avoid a recursive templating error
 - import_playbook: cluster_variables.yml
-  when: cluster_state | lower == 'present'
+  when: cluster_state_k8s | lower == 'present'
 
 # Provision a separate stack for the bastion
 - hosts: openstack
@@ -16,13 +16,14 @@
         cluster_name: "{{ cluster_name_bastion }}"
         cluster_groups:
           - "{{ bastion_group }}"
-      when: cluster_state | lower == 'present'
+      when: cluster_state_k8s | lower == 'present'
 
 # Provision the cluster infrastructure
 - hosts: openstack
   roles:
     - role: jasmin.cluster-infra
       vars:
+        cluster_state: "{{ cluster_state_k8s }}"
         cluster_name: "{{ cluster_name_k8s }}"
         cluster_groups:
           - "{{ masters_group }}"
@@ -36,7 +37,7 @@
     openstack_trust_id: "{{ hostvars['localhost']['openstack_trust_id'] }}"
     openstack_user_id: "{{ hostvars['localhost']['openstack_user_id'] }}"
     openstack_project_id: "{{ hostvars['localhost']['openstack_project_id'] }}"
-  when: cluster_state | lower == 'present'
+  when: cluster_state_k8s | lower == 'present'
 
 # Delete the bastion
 - hosts: openstack
