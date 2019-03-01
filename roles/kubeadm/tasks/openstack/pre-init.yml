@@ -6,7 +6,7 @@
   with_items:
     - openstack_auth_url
     - openstack_trust_id
-    - openstack_trustee_username
+    - openstack_trustee_id
     - openstack_trustee_password
 
 - name: Install OpenStack cloud configuration
