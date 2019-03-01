@@ -3,4 +3,4 @@
 - name: jasmin.cluster-infra
   scm: git
   src: https://github.com/cedadev/jasmin-cluster-infra-ansible.git
-  version: issue-23
+  version: master
