@@ -3,14 +3,15 @@
 - name: List Kubernetes nodes
   shell: kubectl get nodes -o json | jq -r '.items|map(.metadata.name)|join(",")'
   register: kube_nodes
+  failed_when: kube_nodes.stderr != ''
 
 - name: Get inventory hostnames
   set_fact:
     inventory_hostnames: "{{ hostvars.values()|map(attribute='ansible_hostname')|list }}"
 
 - name: Remove non-inventory nodes from cluster
-  command: kubectl delete node {{ host_item }}
-  when: "host_item not in inventory_hostnames"
+  command: "kubectl delete node {{ host_item }}"
+  when: host_item not in inventory_hostnames
   with_items: "{{ kube_nodes.stdout.split(',') }}"
   loop_control:
     loop_var: host_item

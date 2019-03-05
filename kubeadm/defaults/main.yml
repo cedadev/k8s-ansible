@@ -34,8 +34,7 @@ cluster_config_extra: {}
 
 # By default, take the OpenStack variables from the environment vars
 openstack_auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
-# Take the project domain by preference, then user domain, then custom domain variable
-openstack_domain_name: "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') | default(lookup('env', 'OS_USER_DOMAIN_NAME'), true) | default(lookup('env','OS_DOMAIN_NAME'), true) }}"
 openstack_project_id: "{{ lookup('env', 'OS_PROJECT_ID') }}"
-openstack_username: "{{ lookup('env', 'OS_USERNAME') }}"
-openstack_password: "{{ lookup('env', 'OS_PASSWORD') }}"
+openstack_trust_id: "{{ lookup('env', 'OS_TRUST_ID') }}"
+openstack_trustee_id: "{{ lookup('env', 'OS_USER_ID') }}"
+openstack_trustee_password: "{{ lookup('env', 'OS_PASSWORD') }}"

@@ -12,9 +12,17 @@
   failed_when: false
   register: reboot_required
 
-- name: Reboot if required
+- name: Reboot worker if required
   reboot:
-  when: reboot_required.rc != 0
+  when:
+  - reboot_required.rc != 0
+  - kube_role == "worker"
+
+- name: Reboot master if required
+  reboot:
+  when:
+  - reboot_required.rc != 0
+  - kube_role == "master"
 
 - name: Check if any services need restarting
   command: needs-restarting -s
