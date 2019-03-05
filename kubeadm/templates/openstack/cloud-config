@@ -5,3 +5,4 @@ password="{{ openstack_trustee_password | regex_replace('\\\\', '\\\\\\\\') }}"
 trust-id={{ openstack_trust_id }}
 [BlockStorage]
 bs-version=v2
+trust-device-path=true
