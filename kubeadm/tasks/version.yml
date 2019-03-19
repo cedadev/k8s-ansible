@@ -91,10 +91,8 @@
 
         - set_fact:
             kubernetes_version_target: "{{ kubelet_available.stdout }}"
-      when: >
-        kubernetes_version_installed is not defined or
-        not kubernetes_version_installed.startswith(kubernetes_version) or
-        (upgrade_system_packages | bool)
+      # Execute this block if the previous task didn't set the target version
+      when: kubernetes_version_target is not defined
   when: kube_role == "master"
 
 - name: Set target Kubernetes version for workers
