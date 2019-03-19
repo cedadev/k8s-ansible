@@ -2,7 +2,8 @@
 galaxy_info:
   role_name: k8s
   description: >
-    This role install Kubernetes using kubeadm with OpenStack.
+    This role install Kubernetes using kubeadm. Supports OpenStack cloud
+    provide Supports OpenStack cloud providerr
   license: Apache2
   min_ansible_version: 2.7.5
   platforms:

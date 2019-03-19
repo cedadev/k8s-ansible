@@ -28,16 +28,14 @@ currently provides the following:
 Where `config.yml` reads:
 
     ---
-    cluster_name: kubernetes
+    cluster_name: k8s
+    cluster_version: 1.13
     cluster_state: present
     cluster_network: caastest-U-internal
     cluster_keypair: brtknr-33236e18e6285585a7f58f1006f88349
-    cluster_num_masters: 1
-    cluster_num_workers: 2
-    cluster_fip_uuid: 8723c186-d15f-44d5-9421-e12bf2a03325
-    cluster_fip_ip: 192.171.139.249
+    cluster_num_workers: 4
+    cluster_gw_fip_ip: 192.171.139.249
 
     openstack_trustee_id: f8d4001b4e33ecdb24a11f3de1a9102275b3b39e7f1b3bad4caf33775d3f8c09
-    openstack_trustee_username: caasctl
     openstack_trustee_password: 'secretnomore'
     ...
