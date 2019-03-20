@@ -1,5 +1,18 @@
 ---
 
+- name: Download any package updates, but don't install them
+  yum:
+    name: '*'
+    state: latest
+    disablerepo: kubernetes
+    download_only: yes
+  ignore_errors: yes
+  register: yum_download
+
+- name: If download failed, clear yum metadata
+  command: yum clean metadata
+  when: yum_download is failed
+
 - name: Ensure all non-Kubernetes packages are at the latest version
   yum:
     name: '*'
