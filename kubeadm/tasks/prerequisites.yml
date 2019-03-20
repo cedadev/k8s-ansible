@@ -1,23 +1,13 @@
 ---
 
-- name: Download any package updates, but don't install them
-  yum:
-    name: '*'
-    state: latest
-    disablerepo: kubernetes
-    download_only: yes
-  ignore_errors: yes
-  register: yum_download
-
-- name: If download failed, clear yum metadata
-  command: yum clean metadata
-  when: yum_download is failed
-
+# This is needed to fix a metadata issue with yum
+# Something in the Ansible yum module is re-instating the bad metadata
 - name: Ensure all non-Kubernetes packages are at the latest version
-  yum:
-    name: '*'
-    state: latest
-    disablerepo: kubernetes
+  shell: >
+    yum update -y --disablerepo=kubernetes || (
+      yum clean metadata &&
+      yum update -y --disablerepo=kubernetes
+    )
 
 - name: Check if a reboot is required
   command: needs-restarting -r
