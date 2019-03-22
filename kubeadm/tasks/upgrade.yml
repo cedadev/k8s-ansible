@@ -27,8 +27,13 @@
     - kubeadm_kubectl_upgraded is changed
 
 # Try our best to drain pods from the host - if the drain times out, continue anyway
+#   --delete-local-data allows the draining of pods using emptyDir volumes
 - name: Drain pods from host
-  command: kubectl drain {{ ansible_hostname }} --ignore-daemonsets --timeout={{ kubectl_drain_timeout }}
+  command: >
+    kubectl drain {{ ansible_hostname }}
+      --ignore-daemonsets
+      --delete-local-data
+      --timeout={{ kubectl_drain_timeout }}
   delegate_to: "{{ kube_master_inventory_hostname }}"
   register: kubectl_drain
   failed_when: kubectl_drain.rc != 0 and 'did not complete within' not in kubectl_drain.stderr

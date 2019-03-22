@@ -2,24 +2,36 @@
 #####
 ## These tasks decide what version of Kubernetes to try and install
 ##
+## Kubernetes releases follow SemVer, i.e. releases are <major>.<minor>.<patch>
+##
+## The kubernetes_version variable should be set to the target minor
+## version, e.g. 1.12 or 1.13
+##
 ## For worker nodes, the target version will be the exact version that is
 ## installed on the master
 ##
 ## For the master, the target version is decided using the following logic:
 ##
-##   1. If installing new worker nodes only, i.e. there is an existing
-##      installation, upgrade_packages = false and upgrade_kubernetes = false,
-##      the target version is the currently installed version (i.e. no change)
+##   1. In the following cases, the target version is the latest available
+##      version that matches kubernetes_version
 ##
-##   2. If there is an existing installation and upgrade_packages is true
-##      but upgrade_kubernetes is false, then the target version is the
-##      latest patch release of the currently installed minor version,
-##      e.g. if 1.12.0 is currently installed, then 1.12.1 would be
-##      installed if available, even if kubernetes_version is "1.13"
+##        - There is no existing installation
+##        - The installed version does not match kubernetes_version
+##        - The upgrade_system_packages variable is true
 ##
-##   3. If there is no existing installation or upgrade_kubernetes = true
-##      (which implies upgrade_packages = true), the target version is the
-##      latest available version that matches kubernetes_version
+##      This means that:
+##
+##        - New clusters get the latest matching version
+##        - If kubernetes_version changes, a minor version upgrade will be
+##          performed
+##        - If upgrade_system_packages is true, a patch version upgrade
+##          will be performed
+##
+##   2. In all other cases, i.e. kubernetes_version matches the installed version
+##      and upgrade_system_packages is false, the target version is the currently
+##      installed version (no change)
+##
+##      This will usually only be the case when installing new worker nodes
 #####
 
 - name: Add yum repository for Kubernetes
@@ -58,35 +70,29 @@
   block:
     - name: Use currently installed version
       set_fact:
-        kubernetes_version: "{{ kubernetes_version_installed }}"
+        kubernetes_version_target: "{{ kubernetes_version_installed }}"
       when:
         - kubernetes_version_installed is defined
-        - not (upgrade_packages | bool)
-        - not (upgrade_kubernetes | bool)
+        - kubernetes_version_installed.startswith(kubernetes_version)
+        - not (upgrade_system_packages | bool)
 
-    - name: Find installed minor version
-      set_fact:
-        kubernetes_version: "{{ kubernetes_version_installed.split('.')[:-1] | join('.') }}"
-      when:
-        - kubernetes_version_installed is defined
-        - upgrade_packages | bool
-        - not (upgrade_kubernetes | bool)
+    - name: Use latest matching Kubernetes version
+      block:
+        - debug:
+            msg: "Requested Kubernetes version: {{ kubernetes_version }}"
 
-    - debug:
-        msg: "Requested Kubernetes version: {{ kubernetes_version }}"
+        # Find the latest available Kubernetes version that conforms to the requested version
+        - shell: |
+            set -eo pipefail
+            yum list available kubelet-{{ kubernetes_version }}* --showduplicates -q | \
+              tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
+          changed_when: false
+          register: kubelet_available
 
-    # Find the latest available Kubernetes version that conforms to the requested version
-    - name: Find latest matching Kubernetes version
-      shell: |
-        set -eo pipefail
-        yum list available kubelet-{{ kubernetes_version }}* --showduplicates -q | \
-          tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
-      changed_when: false
-      register: kubelet_available
-
-    - name: Set target Kubernetes version fact
-      set_fact:
-        kubernetes_version_target: "{{ kubelet_available.stdout }}"
+        - set_fact:
+            kubernetes_version_target: "{{ kubelet_available.stdout }}"
+      # Execute this block if the previous task didn't set the target version
+      when: kubernetes_version_target is not defined
   when: kube_role == "master"
 
 - name: Set target Kubernetes version for workers

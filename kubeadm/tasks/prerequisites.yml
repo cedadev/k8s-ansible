@@ -1,10 +1,25 @@
 ---
 
-- name: Ensure all non-Kubernetes packages are at the latest version
+# This is needed to fix a metadata issue with yum
+# Something in the Ansible yum module is re-instating the bad metadata
+- name: Try to ensure all non-Kubernetes packages are at the latest version
   yum:
     name: '*'
     state: latest
     disablerepo: kubernetes
+  register: yum_state
+  ignore_errors: true
+- block:
+    - name: Clean metadata
+      command: yum clean metadata
+      args:
+        warn: false
+    - name: Ensure all non-Kubernetes packages are at the latest version
+      yum:
+        name: '*'
+        state: latest
+        disablerepo: kubernetes
+  when: yum_state is failed
 
 - name: Check if a reboot is required
   command: needs-restarting -r

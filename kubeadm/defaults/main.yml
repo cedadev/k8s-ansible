@@ -25,8 +25,7 @@ kube_master_ip: "{{ hostvars[kube_master_inventory_hostname]['ansible_' + cluste
 kubectl_drain_timeout: "300s"
 
 # Only run upgrades if explicitly asked to
-upgrade_packages: no
-upgrade_kubernetes: no
+upgrade_system_packages: false
 
 # Defaults for config templates
 kubelet_extra_args: {}

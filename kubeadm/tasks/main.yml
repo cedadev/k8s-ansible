@@ -29,7 +29,9 @@
   when:
     - inventory_hostname == host_item
     - kubernetes_version_installed is defined
-    - (upgrade_packages | bool) or (upgrade_kubernetes | bool)
+    - >
+      kubernetes_version_installed != kubernetes_version_target or
+      (upgrade_system_packages | bool)
   # Make sure the masters are upgraded first
   with_items: "{{ groups['kube-masters']|list }} + {{ groups['kube-workers']|list }}"
   loop_control:
