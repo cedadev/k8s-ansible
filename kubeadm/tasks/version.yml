@@ -72,9 +72,9 @@
       set_fact:
         kubernetes_version_target: "{{ kubernetes_version_installed }}"
       when:
-        - "kubernetes_version_installed is defined"
-        - "kubernetes_version_installed.startswith(kubernetes_version)"
-        - "not (upgrade_system_packages | bool)"
+        - kubernetes_version_installed is defined
+        - kubernetes_version_installed.startswith(kubernetes_version)
+        - not (upgrade_system_packages | bool)
 
     - name: Use latest matching Kubernetes version
       block:
