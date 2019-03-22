@@ -12,6 +12,8 @@
 - block:
     - name: Clean metadata
       command: yum clean metadata
+      args:
+        warn: false
     - name: Ensure all non-Kubernetes packages are at the latest version
       yum:
         name: '*'
