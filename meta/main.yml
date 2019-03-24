@@ -1,10 +1,9 @@
 ---
 galaxy_info:
-  role_name: k8s-ansible
+  role_name: k8s
   description: >
-    This role install Kubernetes using kubeadm with OpenStack 
-    This role provisions an exisiting cluster to support Beegfs
-    management, metadata, object storage server and client roles.
+    This role install Kubernetes using kubeadm. Supports OpenStack in-tree
+    cloud provider when the flag is enabled.
   license: Apache2
   min_ansible_version: 2.7.5
   platforms:
