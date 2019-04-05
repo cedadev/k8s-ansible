@@ -1,7 +1,7 @@
-apiVersion: kubeadm.k8s.io/v1alpha3
+apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
 # Make sure to advertise the API on the correct IP
-apiEndpoint:
+localApiEndpoint:
   advertiseAddress: "{{ host_ip }}"
 bootstrapTokens:
   - groups:
@@ -21,7 +21,7 @@ nodeRegistration:
 {{ kubelet_extra_args | to_nice_yaml(indent=2) | indent(4, true) }}
 {% endif -%}
 ---
-apiVersion: kubeadm.k8s.io/v1alpha3
+apiVersion: kubeadm.k8s.io/v1beta1
 kind: ClusterConfiguration
 clusterName: "{{ cluster_name }}"
 # Use the required Kubernetes version

@@ -1,9 +1,10 @@
-apiVersion: kubeadm.k8s.io/v1alpha3
+apiVersion: kubeadm.k8s.io/v1beta1
 kind: JoinConfiguration
-discoveryTokenAPIServers:
-  - "{{ kube_master_ip }}:6443"
-discoveryTokenUnsafeSkipCAVerification: true
-token: "{{ kubeadm_token }}"
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: "{{ kube_master_ip }}:6443"
+    token: "{{ kubeadm_token }}"
+    unsafeSkipCAVerification: true
 nodeRegistration:
   name: "{{ ansible_hostname }}"
   kubeletExtraArgs:

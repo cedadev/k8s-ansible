@@ -82,7 +82,8 @@
             msg: "Requested Kubernetes version: {{ kubernetes_version }}"
 
         # Find the latest available Kubernetes version that conforms to the requested version
-        - shell: |
+        - name: Find matching Kubernetes version
+          shell: |
             set -eo pipefail
             yum list available kubelet-{{ kubernetes_version }}* --showduplicates -q | \
               tail -n -1 | tr -s " " | cut -d " " -f 2 | cut -d "-" -f 1
