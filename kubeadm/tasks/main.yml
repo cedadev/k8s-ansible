@@ -13,6 +13,11 @@
     - inventory_hostname in groups['kube-masters']
     - inventory_hostname in groups['kube-workers']
 
+# Check if the Kubernetes version is one that is supported
+- fail:
+    msg: "Kubernetes version '{{ kubernetes_version }}' is not supported"
+  when: kubernetes_version not in supported_kubernetes_versions
+
 # Include cloud provider variables
 - name: Include cloud-provider variables
   include_vars: "{{ cloud_provider }}.yml"

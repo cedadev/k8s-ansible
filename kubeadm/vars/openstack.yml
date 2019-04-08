@@ -9,22 +9,24 @@ kubelet_extra_args:
   cloud-config: /etc/kubernetes/cloud-config
 
 cluster_config_extra:
-  apiServerExtraArgs:
-    cloud-provider: openstack
-    cloud-config: /etc/kubernetes/cloud-config
-    # Use the k8s-keystone-auth webhook for authentication
-    authentication-token-webhook-config-file: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
-  apiServerExtraVolumes:
-    - name: cloud-config
-      hostPath: /etc/kubernetes/cloud-config
-      mountPath: /etc/kubernetes/cloud-config
-    - name: k8s-keystone-auth-webhook-config
-      hostPath: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
-      mountPath: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
-  controllerManagerExtraArgs:
-    cloud-provider: openstack
-    cloud-config: /etc/kubernetes/cloud-config
-  controllerManagerExtraVolumes:
-    - name: cloud-config
-      hostPath: /etc/kubernetes/cloud-config
-      mountPath: /etc/kubernetes/cloud-config
+  apiServer:
+    extraArgs:
+      cloud-provider: openstack
+      cloud-config: /etc/kubernetes/cloud-config
+      # Use the k8s-keystone-auth webhook for authentication
+      authentication-token-webhook-config-file: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
+    extraVolumes:
+      - name: cloud-config
+        hostPath: /etc/kubernetes/cloud-config
+        mountPath: /etc/kubernetes/cloud-config
+      - name: k8s-keystone-auth-webhook-config
+        hostPath: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
+        mountPath: /etc/kubernetes/k8s-keystone-auth-webhook-config.yaml
+  controllerManager:
+    extraArgs:
+      cloud-provider: openstack
+      cloud-config: /etc/kubernetes/cloud-config
+    extraVolumes:
+      - name: cloud-config
+        hostPath: /etc/kubernetes/cloud-config
+        mountPath: /etc/kubernetes/cloud-config

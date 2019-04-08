@@ -1,3 +1,6 @@
+# The supported Kubernetes versions
+supported_kubernetes_versions: ['1.13', '1.14']
+
 # The default Kubernetes version
 kubernetes_version: "1.13"
 
