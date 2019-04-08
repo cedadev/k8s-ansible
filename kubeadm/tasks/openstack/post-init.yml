@@ -62,11 +62,26 @@
     # Force the API server to restart by adding or updating a meaningless annotation
     # in the manifest whenever the config changes
     - name: Force API server restart
-      lineinfile:
-        path: /etc/kubernetes/manifests/kube-apiserver.yaml
-        line: '    "jasmin/authn-webhook-ready": "{{ ''{:0>10d}''.format(10000000000 | random) }}"'
-        regexp: 'jasmin/authn-webhook-ready'
-        insertafter: 'annotations:'
+      block:
+        - name: Create API server patch
+          set_fact:
+            api_server_patch:
+              metadata:
+                annotations:
+                  "jasmin/authn-webhook-ready": "{{ '{:0>10d}'.format(10000000000 | random) }}"
+
+        - name: Generate patched API server manifest
+          shell: |
+            set -eo pipefail
+            kubectl apply -f /etc/kubernetes/manifests/kube-apiserver.yaml --dry-run -o json | \
+              jq '. * {{ api_server_patch | to_json }}' | \
+              kubectl apply -f - --dry-run -o yaml
+          register: api_server_manifest
+
+        - name: Apply patched API server configuration
+          copy:
+            content: "{{ api_server_manifest.stdout }}"
+            dest: /etc/kubernetes/manifests/kube-apiserver.yaml
       when: k8s_keystone_auth_webhook_config is changed
 
     - name: Wait for apiserver to become available
